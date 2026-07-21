@@ -1,81 +1,71 @@
-ゼロから作る Deep Learning ❻ —LLM編
+『밑바닥부터 시작하는 딥러닝 ❻』 <br>: 토크나이저부터 추론 모델까지 직접 만드는 LLM
 =============================
 
 <!-- [<img src="https://raw.githubusercontent.com/oreilly-japan/deep-learning-from-scratch-5/images/cover.png" width="200px">](https://www.amazon.co.jp/dp/4814400594/) -->
 
 
-書籍『[ゼロから作るDeep Learning ❻](https://www.amazon.co.jp/dp/4814401612)』（オライリー・ジャパン発行）のサポートサイトです。本書籍で使用するソースコードがまとめられています。
+Coming soon
 
 
-## ファイル構成
+## 파일 구성
 
-|フォルダ名 |説明                             |
+|폴더명 |설명                             |
 |:--        |:--                              |
-|`ch01`〜`ch09`|各章で使用するコード|
-|`codebot`   |CodeBotで使用するコードやデータ |
-|`storybot`   |StoryBotで使用するコードやデータ |
-|`webbot`   |WebBotで使用するコードやデータ |
+|`ch01`〜`ch09`|각 장에서 사용하는 코드|
+|`codebot`   |CodeBot에서 사용하는 코드와 데이터 |
+|`storybot`   |StoryBot에서 사용하는 코드와 데이터 |
+|`webbot`   |WebBot에서 사용하는 코드와 데이터 |
 <!-- |`notebooks`   |1章〜6章までのコード（Jupyter Notebook形式）| -->
 
-## Pythonと外部ライブラリ
+## 파이썬과 외부 라이브러리
 
-ソースコードを実行するには下記のライブラリが必要です。
+소스 코드를 실행하려면 다음 라이브러리가 필요합니다.
 
 * NumPy
 * Matplotlib
 * PyTorch 2.x
 * tqdm
 
-※Pythonのバージョンは **3.10以上** を利用します。
+※ 파이썬은 3.10 이상을 사용합니다.
 
 
-## 環境構築
+## 환경 구축
 
-### uvを使う場合
+### uv를 사용하는 경우
 
-[uv](https://docs.astral.sh/uv/)は高速なPythonパッケージマネージャーです。`uv.lock`により、OSを問わず同じ環境を再現できます。
+[uv](https://docs.astral.sh/uv/)는 빠른 파이썬 패키지 관리자입니다.`uv.lock`을 사용하면 운영체제와 관계없이 동일한 환경을 재현할 수 있습니다.
 ```bash
-# uvのインストール（未インストールの場合）
+# uv 설치(설치되어 있지 않은 경우)
 curl -LsSf https://astral.sh/uv/install.sh | sh   # Mac/Linux
 powershell -c "irm https://astral.sh/uv/install.ps1 | iex"  # Windows
 ```
 
-実行は`uv run`を使います。環境構築も自動で行われます。
+실행할 때는 `uv run`을 사용합니다. 필요한 환경도 자동으로 구축됩니다.
 ```bash
 uv run python ch01/01_char_tokenizer.py
 ```
 
-### pipを使う場合
+### pip를 사용하는 경우
 ```bash
 pip install -r requirements.txt
 python ch01/01_char_tokenizer.py
 ```
 
 
-## 実行方法
+## 실행 방법
 
-各章のフォルダへ移動して実行するか、親フォルダから実行します。
+각 장의 폴더로 이동하여 실행하거나, 상위 폴더에서 실행합니다.
 ```bash
-# 各章のフォルダ内で実行
+# 각 장의 폴더에서 실행
 $ cd ch01
 $ python 01_char_tokenizer.py
 
-# 親フォルダから実行
+# 상위 폴더에서 실행
 $ python ch02/10_gpt.py
 ```
 
-uvを使う場合は`python`を`uv run python`に置き換えてください。
+uv를 사용하는 경우에는 `python`을 `uv run python`으로 바꾸어 실행하세요.
 
-## ライセンス
+## 라이선스
 
-本リポジトリのソースコードは[MITライセンス](http://www.opensource.org/licenses/MIT)です。
-商用・非商用問わず、自由にご利用ください。
-
-
-## 正誤表
-
-本書の正誤情報は以下のページで公開しています。
-
-https://github.com/oreilly-japan/deep-learning-from-scratch-6/wiki/errata
-
-本ページに掲載されていない誤植など間違いを見つけた方は、[japan@oreilly.co.jp](<mailto:japan@oreilly.co.jp>)までお知らせください。
+이 리포지터리의 소스 코드는 [MIT 라이선스](http://www.opensource.org/licenses/MIT)로 제공됩니다. 상업적·비상업적 용도와 관계없이 자유롭게 이용할 수 있습니다.
