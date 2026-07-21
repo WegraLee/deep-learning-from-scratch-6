@@ -13,7 +13,7 @@ class RoPE(nn.Module):
         half_ids = torch.arange(0, half)
         inv_freq = 1.0 / (theta ** ( (2.0 * half_ids) / key_dim ))  # (half,)
 
-        positions = torch.arange(max_context_len)  # (max_context_len,)
+        positions = torch.arange(max_context_len)        # (max_context_len,)
         angles = positions[:, None] * inv_freq[None, :]  # (max_context_len, half)
 
         cos = torch.cos(angles)  # (max_context_len, half)
@@ -28,7 +28,7 @@ class RoPE(nn.Module):
         input_dtype = x.dtype
         x = x.float()
 
-        # offsetを考慮して位置エンコーディングを取得
+        # 오프셋을 고려하여 위치 인코딩 가져오기
         max_context_len = self.cos_cache.size(0)
         if offset + context_len > max_context_len:
             offset = max_context_len - context_len
@@ -62,13 +62,13 @@ class MultiHeadAttention(nn.Module):
 
         self.rope = rope
 
-        # KV-Cache用の変数を追加
-        self.k_cache = None  # Keyのキャッシュ
-        self.v_cache = None  # Valueのキャッシュ
-        self.cache_offset = 0  # 現在のキャッシュ位置を追跡
+        # KV 캐시용 변수 추가
+        self.k_cache = None    # 키 캐시
+        self.v_cache = None    # 밸류 캐시
+        self.cache_offset = 0  # 현재 캐시 위치 추적
 
     def forward(self, x, use_cache=False):
-        B, C, E = x.shape
+        B, C, E = x.shape  # 배치 크기, 컨텍스트 길이, 임베딩 차원
         H, D = self.n_head, self.head_dim
 
         Q = self.W_q(x)
@@ -79,7 +79,7 @@ class MultiHeadAttention(nn.Module):
         K = K.view(B, C, H, D).transpose(1, 2)
         V = V.view(B, C, H, D).transpose(1, 2)
 
-        # RoPEにoffsetを渡す
+        # RoPE에 오프셋 전달
         if self.rope is not None:
             if use_cache:
                 Q = self.rope(Q, self.cache_offset)
@@ -88,32 +88,32 @@ class MultiHeadAttention(nn.Module):
                 Q = self.rope(Q)
                 K = self.rope(K)
 
-        # KV-Cacheの処理
+        # KV 캐시 처리
         if use_cache:
-            # Prefill（初回）かDecode（2回目以降）かを判定
+            # 프리필(첫 호출)인지 디코드(두 번째 호출 이후)인지 판별
             is_first_call = (self.k_cache is None)
 
             if is_first_call:
-                # 初回:キャッシュを初期化
+                # 프리필(첫 번째 호출): 캐시 초기화
                 self.k_cache = K
                 self.v_cache = V
             else:
-                # 2回目以降:新しいKeyとValueをキャッシュに追加
+                # 디코드(두 번째 이후 호출): 새로운 키와 밸류를 캐시에 추가
                 self.k_cache = torch.cat([self.k_cache, K], dim=2)
                 self.v_cache = torch.cat([self.v_cache, V], dim=2)
 
-            # オフセットを更新(次のトークンの位置へ)
+            # 오프셋 갱신(다음 토큰 위치로 이동)
             self.cache_offset += C
 
-            # キャッシュされた全てのKeyとValueを使用
+            # 캐시된 모든 키와 밸류 사용
             K = self.k_cache
             V = self.v_cache
 
-        # 通常のAttention計算
+        # 일반적인 어텐션 계산
         scores = torch.matmul(Q, K.transpose(-2, -1))
         scores = scores / (D ** 0.5)
 
-        # Causal Mask（KVキャッシュ使用時は不要）
+        # 인과 마스크(디코드 단계에서는 불필요)
         if not use_cache or is_first_call:
             mask = torch.tril(torch.ones(C, C, device=scores.device))
             scores = scores.masked_fill(mask == 0, float('-inf'))
@@ -127,7 +127,7 @@ class MultiHeadAttention(nn.Module):
         return output
 
     def clear_cache(self):
-        """キャッシュをクリアする"""
+        """KV 캐시 비우기"""
         self.k_cache = None
         self.v_cache = None
         self.cache_offset = 0
@@ -168,7 +168,7 @@ class Block(nn.Module):
         return x
 
     def clear_cache(self):
-        """キャッシュをクリアする"""
+        """KV 캐시 비우기"""
         self.attn.clear_cache()
 
 
@@ -247,7 +247,7 @@ class GPT(nn.Module):
         return model
 
     def clear_cache(self):
-        """全てのブロックのキャッシュをクリアする"""
+        """모든 블록의 KV 캐시 한번에 비우기"""
         for block in self.blocks:
             block.clear_cache()
 
@@ -255,13 +255,13 @@ class GPT(nn.Module):
 def generate_without_cache(model, start_ids, max_new_tokens):
     model.eval()
 
-    ids = start_ids  # 最初のトークン
+    ids = start_ids  # 첫 번째 토큰
     with torch.no_grad():
         for _ in range(max_new_tokens):
-            # 毎回、全てのトークンを渡す
+            # 매번 모든 토큰 전달
             logits = model(ids, use_cache=False)
             next_id = torch.argmax(logits[:, -1, :], dim=-1, keepdim=True)
-            # 新しいトークンを連結
+            # 새로운 토큰 연결
             ids = torch.cat([ids, next_id], dim=1)
 
     return ids
@@ -269,11 +269,11 @@ def generate_without_cache(model, start_ids, max_new_tokens):
 def generate_with_cache(model, start_ids, max_new_tokens):
     model.eval()
 
-    ids = start_ids  # 最初のトークン
+    ids = start_ids  # 첫 번째 토큰
     next_id = start_ids
     with torch.no_grad():
         for _ in range(max_new_tokens):
-            # 1トークンずつ生成
+            # 한 번에 토큰 하나씩 생성
             logits = model(next_id, use_cache=True)
             next_id = torch.argmax(logits[:, -1, :], dim=-1, keepdim=True)
             ids = torch.cat([ids, next_id], dim=1)
@@ -293,40 +293,39 @@ def measure_generation_time(model, start_ids, use_cache, num_tokens=200):
     elapsed = time.time() - start_time
     return elapsed
 
-# テスト
+# 테스트
 model = GPT(vocab_size=1000, max_context_len=256, embed_dim=384,
             n_head=6, n_layer=6, ff_dim=1024)
 
 
-start_ids = torch.tensor([[42]])  # 固定シード
+start_ids = torch.tensor([[42]])  # 고정 시드
 
 time_without = measure_generation_time(model, start_ids, use_cache=False)
 time_with = measure_generation_time(model, start_ids, use_cache=True)
-print(f"KV-Cacheなし: {time_without:.2f}秒")
-print(f"KV-Cacheあり: {time_with:.2f}秒")
-print(f"高速化率: {time_without / time_with:.1f}倍")
+print(f"KV 캐시 없음: {time_without:.2f}초")
+print(f"KV 캐시 있음: {time_with:.2f}초")
+print(f"속도 향상 비율: {time_without / time_with:.1f}배")
 
 """
-print("\n=== 出力の一致確認 ===")
+print("\n=== 출력 일치 여부 확인 ===")
 model.clear_cache()
 
-# 同じ開始トークンで生成
-
-# KV-Cacheなしで生成
+# 동일한 시작 토큰으로 생성
+# KV 캐시 없이 생성
 output_without = generate_without_cache(model, start_ids, max_new_tokens=max_new_tokens)
-print(f"KV-Cacheなし: {output_without[0, :11].tolist()}")
+print(f"KV 캐시 없음: {output_without[0, :11].tolist()}")
 
-# KV-Cacheありで生成
+# KV 캐시 사용하도록 생성
 model.clear_cache()
 output_with = generate_with_cache(model, start_ids, max_new_tokens=max_new_tokens)
 
-print(f"KV-Cacheあり: {output_with[0, :11].tolist()}")
+print(f"KV 캐시 있음: {output_with[0, :11].tolist()}")
 
 print(output_with.shape, output_without.shape)
-# 一致確認
+# 일치 여부 확인
 if torch.equal(output_without[:, :max_new_tokens], output_with[:, :max_new_tokens]):
-    print("✓ 出力が一致しました!")
+    print("✓ 출력이 일치합니다!")
 else:
-    print("✗ 出力が一致しません")
-    print(f"差分の数: {(output_without[:, :max_new_tokens] != output_with[:, :max_new_tokens]).sum().item()}")
+    print("✗ 출력이 일치하지 않습니다.")
+    print(f"서로 다른 값의 수: {(output_without[:, :max_new_tokens] != output_with[:, :max_new_tokens]).sum().item()}")
 """

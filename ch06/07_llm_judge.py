@@ -11,7 +11,7 @@ from storybot.tokenizer import BPETokenizer
 from storybot.utils import get_device, generate
 
 
-# 設定
+# 설정
 # ==========================================
 client = OpenAI(api_key="your_api_key_here")
 # ==========================================
@@ -19,36 +19,36 @@ device = get_device()
 tokenizer_path = 'storybot/merge_rules.pkl'
 tokenizer = BPETokenizer.load_from(tokenizer_path)
 
-# 評価するモデルのパス（イテレーションごとに保存したもの）
+# 평가할 모델 경로(이터레이션별로 저장한 모델)
 model_paths = {
     500: 'storybot/model_iter_500.pt',
     5000: 'storybot/model_iter_5000.pt',
     40000: 'storybot/model_pretrain.pt',
 }
 
-# 生成設定
+# 생성 설정
 prompt = "<|endoftext|>"
 max_new_tokens = 200
 temperature = 1.0
-num_samples = 10  # 各モデルで生成するサンプル数
+num_samples = 10  # 각 모델에서 생성할 샘플 수
 
 def evaluate_story(client, story):
-    """LLM-as-a-Judgeでストーリーを評価"""
+    """LLM-as-a-Judge로 스토리 평가"""
 
-    evaluation_prompt = f"""以下の子供向けストーリーを2つの観点で1-5点で評価してください。
+    evaluation_prompt = f"""다음 어린이용 스토리를 두 가지 관점에서 1~5점으로 평가해주세요.
 
-ストーリー:
+스토리:
 {story}
 
-評価観点:
-1. Coherence（一貫性）: 論理的につながっているか、物語として筋が通っているか
-2. Grammar（文法）: 文法的に正しい英語か
+평가 관점:
+1. Coherence(일관성): 논리적으로 이어지는가, 이야기로서 앞뒤가 맞는가
+2. Grammar(문법): 문법적으로 올바른 영어인가
 
-以下のJSON形式で回答してください:
+다음 JSON 형식으로 답변해주세요.
 {{
-    "coherence": <1-5の整数>,
-    "grammar": <1-5の整数>,
-    "comment": "<評価の簡単な理由>"
+    "coherence": <1-5 범위의 정수>,
+    "grammar": <1-5 범위의 정수>,
+    "comment": "<평가에 대한 간단한 이유>"
 }}"""
 
     response = client.chat.completions.create(
@@ -59,10 +59,10 @@ def evaluate_story(client, story):
     )
 
     text = response.choices[0].message.content
-    print("=====出力====")
+    print("===== 출력 ====")
     print(text)
 
-    # response_formatを使えば、パース処理がシンプルになる
+    # response_format을 사용하면 파싱 처리가 간단해짐
     return json.loads(text)
 
 results = {}
@@ -75,13 +75,13 @@ for iteration, model_path in model_paths.items():
     iteration_results = []
 
     for i in range(num_samples):
-        print(f"\n--- サンプル {i+1} ---")
+        print(f"\n--- 샘플 {i+1} ---")
 
-        # ストーリー生成
+        # 스토리 생성
         story = generate(model, tokenizer, prompt, max_new_tokens, temperature)
         print(f"Story: {story[:200]}...")
 
-        # LLM-as-a-Judgeで評価
+        # LLM-as-a-Judge로 평가
         scores = evaluate_story(client, story)
         print(f"Scores: {scores}")
 
@@ -92,16 +92,16 @@ for iteration, model_path in model_paths.items():
 
     results[iteration] = iteration_results
 
-# サマリー出力
+# 요약 출력
 print("\n" + "="*50)
-print("Summary")
+print("요약")
 print("="*50)
 
 for iteration in model_paths.keys():
     scores_list = [r["scores"] for r in results[iteration]]
 
-    print(f"\nIteration {iteration}:")
-    for key in ["coherence", "grammar"]:
+    print(f"\n이터레이션 {iteration}:")
+    for key in ["일관성", "문법"]:
         values = [s[key] for s in scores_list]
         avg = statistics.mean(values)
         std = statistics.stdev(values) if len(values) > 1 else 0

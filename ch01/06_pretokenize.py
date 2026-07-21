@@ -4,7 +4,7 @@ from tqdm import tqdm
 
 
 def pretokenize(text):
-    # GPT-2で使用されている正規表現パターン
+    # GPT-2에서 사용하는 정규 표현식 패턴
     pattern = r"""'(?:[sdmt]|ll|ve|re)| ?\p{L}+| ?\p{N}+| ?[^\s\p{L}\p{N}]+|\s+(?!\S)|\s+"""
     return re.findall(pattern, text)
 
@@ -29,20 +29,20 @@ def merge(ids, pair, new_id):
     return merged_ids
 
 def train_bpe(input_text, vocab_size, end_token="<|endoftext|>"):
-    # ステップ1: 特殊トークンで分割
+    # 1단계: 특수 토큰을 기준으로 분할
     texts = input_text.split(end_token)
 
-    # ステップ2: 各テキスト片を事前トークン化
+    # 2단계: 각 텍스트 조각을 사전 토큰화
     ids_list = []
     for text in texts:
-        for pretoken in pretokenize(text):  # 事前トークン化
-            ids_list.append(list(pretoken.encode("utf-8")))  # ID列に変換
+        for pretoken in pretokenize(text):  # 사전 토큰화
+            ids_list.append(list(pretoken.encode("utf-8")))  # ID열로 변환
 
-    # ==== 残りは元のコードと同じ（ただしtqdmを追加） ====
+    # ==== 나머지는 원래 코드와 동일(tqdm만 추가) ====
     num_merges = vocab_size - 256 - 1
     merge_rules = {}
 
-    for step in tqdm(range(num_merges), desc="Training BPE"):  # tqdmで進捗表示
+    for step in tqdm(range(num_merges), desc="Training BPE"):  # tqdm으로 진행률 표시
         counts = defaultdict(int)
         for ids in ids_list:
             counts = count_pairs(ids, counts)
@@ -81,19 +81,19 @@ class BPETokenizer:
             ids = merge(ids, merge_pair, new_id)
         return ids
 
-    def encode(self, input_text, show_progress=False):
+    def encode(self, input_text, show_progress=False):  # 진행률 표시 인수 추가
         pattern = '(' + re.escape(self.end_token) + ')'
         texts = re.split(pattern, input_text)
         all_ids = []
 
-        # show_progressがTrueならtqdmで進捗表示
+        # # show_progress가 True면 tqdm으로 진행률 표시
         texts = tqdm(texts, desc="Encoding") if show_progress else texts
 
         for text in texts:
             if text == self.end_token:
                 all_ids.append(self.end_token_id)
             else:
-                # 各事前トークンをBPEエンコード
+                # 각 사전 토큰을 BPE로 인코딩
                 for pretoken in pretokenize(text):
                     ids = self._encode_text(pretoken)
                     all_ids.extend(ids)
@@ -106,13 +106,13 @@ class BPETokenizer:
         text = text_bytes.decode("utf-8", errors="replace")
         return text
 
-# 事前トークン化対応のBPE学習
+# 사전 토큰화를 적용한 BPE 학습
 sample_text = "Say hello! Why hello? Just hello.<|endoftext|>Good morning!"
 
 merge_rules = train_bpe(sample_text, vocab_size=270)
 tokenizer = BPETokenizer(merge_rules)
 
-# エンコード/デコード
+# 인코딩과 디코딩
 text = "Say hello!"
 ids = tokenizer.encode(text)
 decoded = tokenizer.decode(ids)
@@ -120,6 +120,6 @@ decoded = tokenizer.decode(ids)
 print(ids)
 print(decoded)
 
-# 各トークンIDをデコードして確認
+# 각 토큰 ID를 개별적으로 디코딩하여 확인
 for token_id in ids:
     print(f"{token_id} -> '{tokenizer.decode([token_id])}'")

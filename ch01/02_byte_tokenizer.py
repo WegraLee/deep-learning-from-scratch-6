@@ -1,12 +1,12 @@
-# 'A' の場合
+# 'A'의 경우
 encoded = 'A'.encode("utf-8")
 print(encoded)        # b'A'
 print(list(encoded))  # [65]
 
-# 'あ' の場合
-encoded = 'あ'.encode("utf-8")
-print(encoded)        # b'\xe3\x81\x82'
-print(list(encoded))  # [227, 129, 130]
+# '가'의 경우
+encoded = '가'.encode("utf-8")
+print(encoded)        # b'\xea\xb0\x80'
+print(list(encoded))  # [234, 160, 128]
 
 ids = [65]
 decoded = bytes(ids).decode("utf-8")
@@ -21,14 +21,14 @@ class ByteTokenizer:
         return bytes(ids).decode("utf-8")
 
 
-# 使用例
+# 사용 예
 tokenizer = ByteTokenizer()
-text = "hello世界😁"
+text = "hello월드😁"
 
-# エンコード
+# 인코딩
 ids = tokenizer.encode(text)
-print(ids)  # [104, 101, 108, 108, 111, 228, 184, 150, 231, 149, 140, 240, 159, 152, 129]
+print(ids)  # [104, 101, 108, 108, 111, 236, 155, 148, 235, 147, 156, 240, 159, 152, 129]
 
-# デコード
+# 디코딩
 decoded = tokenizer.decode(ids)
-print(decoded)  # hello世界😁
+print(decoded)  # hello월드😁

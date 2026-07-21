@@ -6,7 +6,7 @@ from codebot.model import GPT
 from codebot.tokenizer import BPETokenizer
 from codebot.utils import generate, get_device
 
-# 設定
+# 설정
 device = get_device()
 model_path = 'codebot/model_sft.pt'
 # model_path = 'codebot/model_grpo.pt'
@@ -17,7 +17,7 @@ temperature = 1.0
 def format_prompt(user_message):
     return f"### Instruction:\n{user_message}\n\n### Response:\n"
 
-# モデルとトークナイザの読み込み
+# 모델과 토크나이저 불러오기
 tokenizer = BPETokenizer.load_from(tokenizer_path)
 model = GPT.load_from(model_path, device=device)
 
@@ -27,15 +27,15 @@ while True:
     if not user_input:
         continue
 
-    # プロンプトのフォーマットと生成
+    # 프롬프트 포맷팅과 텍스트 생성
     prompt = format_prompt(user_input)
     response = generate(model, tokenizer, prompt, max_new_tokens, temperature)
 
-    # アシスタントの応答部分のみ抽出
+    # 어시스턴트의 응답 부분 추출
     if "### Response:" in response:
         response = response.split("### Response:")[-1].strip()
 
-    # 改行が含まれているかで出力形式を切り替える
+    # 줄바꿈 포함 여부에 따라 출력 형식 전환
     if "\n" in response:
         print(f"Bot:\n{response}")
     else:

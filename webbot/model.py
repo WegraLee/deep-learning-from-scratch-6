@@ -12,7 +12,7 @@ class RoPE(nn.Module):
         half_ids = torch.arange(0, half)
         inv_freq = 1.0 / (theta ** ( (2.0 * half_ids) / key_dim ))  # (half,)
 
-        positions = torch.arange(max_context_len)  # (max_context_len,)
+        positions = torch.arange(max_context_len)        # (max_context_len,)
         angles = positions[:, None] * inv_freq[None, :]  # (max_context_len, half)
 
         cos = torch.cos(angles)  # (max_context_len, half)
@@ -24,11 +24,11 @@ class RoPE(nn.Module):
     def forward(self, x, offset=0):
         batch_size, num_head, context_len, key_dim = x.shape
 
-        # 入力の型を保存し、float32で計算
+        # 입력 데이터 타입을 저장하고, float32로 계산
         input_dtype = x.dtype
         x = x.float()
 
-        # offsetを考慮して位置エンコーディングを取得
+        # 오프셋을 고려하여 위치 인코딩을 가져옴
         max_context_len = self.cos_cache.size(0)
         if offset + context_len > max_context_len:
             offset = max_context_len - context_len
@@ -45,7 +45,7 @@ class RoPE(nn.Module):
         out = torch.stack([x_rot_even, x_rot_odd], dim=-1)
         out = out.reshape(batch_size, num_head, context_len, key_dim)
 
-        return out.to(input_dtype)  # 元の型に戻す
+        return out.to(input_dtype)  # 원레 타입으로 복원
 
 
 class MultiHeadAttention(nn.Module):
@@ -63,7 +63,7 @@ class MultiHeadAttention(nn.Module):
 
         self.rope = rope
 
-        # KV-Cache用の変数
+        # KV 캐시용 변수
         self.k_cache = None
         self.v_cache = None
         self.cache_offset = 0
@@ -77,7 +77,7 @@ class MultiHeadAttention(nn.Module):
         V = self.W_v(x).view(B, C, KV, D).transpose(1, 2)   # (B, KV, C, D)
 
 
-        # RoPEにoffsetを渡す
+        # RoPE에 오프셋 전달
         if self.rope is not None:
             if use_cache:
                 Q = self.rope(Q, self.cache_offset)
@@ -86,9 +86,9 @@ class MultiHeadAttention(nn.Module):
                 Q = self.rope(Q)
                 K = self.rope(K)
 
-        # KV-Cacheの処理
+        # KV 캐시 처리
         if use_cache:
-            # 初回かどうかを判定（キャッシュ更新前に）
+            # 첫 호출인지 확인(캐시를 업데이트하기 전에 판별)
             is_first_call = (self.k_cache is None)
 
             if is_first_call:
@@ -100,7 +100,7 @@ class MultiHeadAttention(nn.Module):
 
             self.cache_offset += C
 
-            # コンテキスト長制限: キャッシュが長すぎる場合は古い部分を切り捨て
+            # 콘텍스트 길이 제한: 캐시가 너무 길면 오래된 부분을 잘라냄
             max_cache_len = self.rope.cos_cache.size(0) if self.rope else 2048
             if self.k_cache.size(2) > max_cache_len:
                 self.k_cache = self.k_cache[:, :, -max_cache_len:]
@@ -110,15 +110,15 @@ class MultiHeadAttention(nn.Module):
             K = self.k_cache
             V = self.v_cache
 
-        # Flash Attention（GQA対応）
+        # Flash Attention(GQA지원)
         if use_cache:
-            # Prefill（初回・プロンプト全体処理）: is_causal=True（各トークンは前方のみ）
-            # Decode（2回目以降・1トークン生成）: is_causal=False（新トークンは全キャッシュにattend）
+            # 프리필(첫 호출·전체 프롬프트 처리): is_causal=True(각 토큰은 이전 위치만 참조) 
+            # 디코드(두 번째 호출 이후·토큰 하나 생성): is_causal=False(새 토큰은 전체 캐시를 참조)
             is_causal = is_first_call
             hidden = F.scaled_dot_product_attention(Q, K, V, is_causal=is_causal,
                                                     enable_gqa=True)
         else:
-            # 学習時: is_causal=Trueでcausal mask適用
+            # 학습할 때: is_causal=True로 인과 마스크 적용
             hidden = F.scaled_dot_product_attention(Q, K, V, is_causal=True,
                                                     enable_gqa=True)
 
@@ -128,7 +128,7 @@ class MultiHeadAttention(nn.Module):
         return output
 
     def clear_cache(self):
-        """キャッシュをクリアする"""
+        """캐시 비우기"""
         self.k_cache = None
         self.v_cache = None
         self.cache_offset = 0
@@ -167,7 +167,7 @@ class Block(nn.Module):
         return x
 
     def clear_cache(self):
-        """キャッシュをクリアする"""
+        """캐시 비우기"""
         self.attn.clear_cache()
 
 
@@ -264,15 +264,15 @@ if __name__ == "__main__":
     ff_dim = 2048
     theta = 10000
 
-    # モデルを作成
+    # 모델 생성
     model = GPT(vocab_size, max_context_len, embed_dim, n_head,
                 n_kv_head, n_layer, ff_dim, theta)
 
-    # パラメータ数を表示
+    # 파라미터 수 출력
     num_params = sum(p.numel() for p in model.parameters())
-    print(f"パラメータ数: {num_params:,} ({num_params/1e6:.1f}M)")
+    print(f"파라미터 수: {num_params:,} ({num_params/1e6:.1f}M)")
 
-    # 動作テスト
+    # 동작 검증
     dummy_input = torch.randint(0, vocab_size, (1, max_context_len))
     logits = model(dummy_input)
-    print(f"出力形状: {logits.shape}")
+    print(f"출력 형상: {logits.shape}")

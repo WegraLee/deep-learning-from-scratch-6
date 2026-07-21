@@ -36,27 +36,27 @@ class BPETokenizer:
         ids = list(text.encode("utf-8"))
 
         def get_merge_priority(pair):
-            return self.merge_rules.get(pair, float('inf'))  # 存在しないペアは最低優先度
+            return self.merge_rules.get(pair, float('inf'))  # 규치 목록에 없는 ID 쌍은 우선순위를 가장 낮게 설정
 
         while len(ids) > 1:
-            # 現在のペアを取得（❶）
+            # 현재 ID열에 있는 인접한 ID 쌍들을 가져옴
             counts = count_pairs(ids)
 
-            # 最優先ペアを特定（❷）
+            # 우선순위가 가장 높은 ID 쌍 찾기
             best_pair = min(counts, key=get_merge_priority)
 
-            # マージ可能性の確認（❸）
+            # 병합할 수 있는지 확인
             if best_pair not in self.merge_rules:
                 break
 
-            # マージの実行（❹）
+            # 병합
             new_id = self.merge_rules[best_pair]
             ids = merge(ids, best_pair, new_id)
 
         return ids
 
     def _encode_chunk(self, args):
-        """チャンクを処理してディスクにキャッシュ"""
+        """개별 청크를 처리하고 캐시 파일에 저장"""
         file_path, start, end, cache_dir, chunk_idx = args
 
         with open(file_path, "rb") as f:
@@ -64,10 +64,10 @@ class BPETokenizer:
             chunk_byte = f.read(end - start)
             chunk_text = chunk_byte.decode("utf-8", errors="ignore")
 
-            # チャンクをエンコード
+            # 청크 인코딩
             ids = self.encode(chunk_text)
 
-        # キャッシュファイルに保存
+        # 캐시 파일에 저장
         cache_file = os.path.join(cache_dir, f"chunk_{chunk_idx:05d}.npy")
         np.array(ids, dtype=np.uint16).tofile(cache_file)
 
@@ -78,11 +78,11 @@ class BPETokenizer:
                                     num_processes=8, num_chunks=64,
                                    cache_dir="bpe_cache"):
 
-        # キャッシュディレクトリの準備
+        # 캐시 디렉터리 준비
         os.makedirs(cache_dir, exist_ok=True)
 
         try:
-            # チャンクを並列処理でトークナイズしてキャッシュ
+            # 청크들을 병렬로 인코딩
             chunk_boundaries = find_chunk_boundaries(file_path, num_chunks)
             total_chunks = len(chunk_boundaries) - 1
 
@@ -99,27 +99,27 @@ class BPETokenizer:
                     desc="Encoding chunks"
                 ))
 
-            # 総トークン数を計算
+            # 전체 토큰 수 계산
             cache_files = [r[0] for r in cache_results]
             token_counts = [r[1] for r in cache_results]
             total_tokens = sum(token_counts)
 
-            # memmapファイルを作成
-            dtype = np.uint16
+            # 메모리 맵 파일 생성
+            dtype = np.uint16  # 각 토큰 ID를 uint16 타입으로 저장 
             arr = np.memmap(output_file, dtype=dtype, mode='w+', shape=(total_tokens,))
 
-            # バッチ処理でキャッシュからmemmapへ書き込み
+            # 캐시 파일의 데이터를 메모리 맵 파일에 기록
             idx = 0
             for cache_file in cache_files:
                 chunk_data = np.fromfile(cache_file, dtype=dtype)
                 arr[idx : idx + len(chunk_data)] = chunk_data
                 idx += len(chunk_data)
 
-            arr.flush()
-            del arr
+            arr.flush()  # 저장 장치에 반영
+            del arr      # 메모리 맵 객체 삭제
 
         finally:
-            # キャッシュの削除
+            # 캐시 디렉터리 삭제
             shutil.rmtree(cache_dir)
 
         return total_tokens
@@ -129,14 +129,14 @@ class BPETokenizer:
         texts = re.split(pattern, input_text)
         all_ids = []
 
-        # show_progressがTrueならtqdmで進捗表示
+        # show_progress가 True이면 tqdm으로 진행 상황 표시
         texts = tqdm(texts) if show_progress else texts
 
         for text in texts:
             if text == self.end_token:
                 all_ids.append(self.end_token_id)
             else:
-                # 各事前トークンをBPEエンコード
+                # 각 사전 토큰을 BPE로 인코딩
                 for pretoken in pretokenize(text):
                     ids = self._encode_text(pretoken)
                     all_ids.extend(ids)

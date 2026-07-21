@@ -18,7 +18,7 @@ def generate(model, tokenizer, prompt, max_new_tokens=1000, temperature=1.0):
         if ids.size(1) > model.max_context_len:
             ids = ids[:, -model.max_context_len:]
 
-        logits = model(next_id, use_cache=True)[:, -1, :]  # kv cache
+        logits = model(next_id, use_cache=True)[:, -1, :]  # KV 캐시
         if temperature == 0:
             next_id = logits.argmax(dim=-1, keepdim=True)
         else:
@@ -31,7 +31,7 @@ def generate(model, tokenizer, prompt, max_new_tokens=1000, temperature=1.0):
         ids = torch.cat((ids, next_id), dim=1)
         generated_ids = torch.cat((generated_ids, next_id), dim=1)
 
-    # 終了トークンを除去
+    # 종료 토큰 제거
     generated_ids = generated_ids[generated_ids != tokenizer.end_token_id]
 
     generated_text = tokenizer.decode(generated_ids.tolist())

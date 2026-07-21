@@ -11,7 +11,7 @@ from storybot.model import GPT
 from storybot.tokenizer import BPETokenizer
 from storybot.utils import get_device, generate
 
-# 設定
+# 설정
 # ==========================================
 client = OpenAI(api_key="your_api_key_here")
 # ==========================================
@@ -19,23 +19,23 @@ device = get_device()
 tokenizer_path = 'storybot/merge_rules.pkl'
 tokenizer = BPETokenizer.load_from(tokenizer_path)
 
-# 比較するモデル
+# 비교할 모델
 model_paths = {
     'pretrain': 'storybot/model_pretrain.pt',
     'dpo': 'storybot/model_dpo.pt',
 }
 
-# 評価設定
+# 평가 설정
 prompt = "Once upon a time"
-num_comparisons = 100  # 比較回数
+num_comparisons = 100  # 비교 횟수
 max_new_tokens = 150
 temperature = 1.0
 
 
 def compare_stories(client, story_a, story_b):
-    """2つのストーリーを比較し、どちらがよりハッピーエンドかを判定"""
+    """두 스토리를 비교하여 어느 쪽이 더 해피엔딩에 가까운지 판정"""
 
-    evaluation_prompt = f"""以下の2つの子供向けストーリーを比較し、どちらがよりハッピーエンドかを判定してください。
+    evaluation_prompt = f"""다음의 두 어린이용 스토리를 비교하여, 어느 쪽이 더 해피엔딩인지 판단해주세요.
 
 【Story A】
 {story_a}
@@ -43,8 +43,8 @@ def compare_stories(client, story_a, story_b):
 【Story B】
 {story_b}
 
-どちらがより明るく幸せな結末か、または希望に満ちた内容かを判断してください。
-JSON形式で回答: {{"winner": "A" or "B" or "tie", "reason": "簡潔な理由"}}"""
+어느 쪽의 결말이 더 밝고 행복한지, 또는 내용이 더 희망적인지 판단해주세요.
+JSON형식으로 답변: {{"winner": "A" or "B" or "tie", "reason": "간단한 이유"}}"""
 
     response = client.chat.completions.create(
         model="gpt-4o-mini",
@@ -56,11 +56,11 @@ JSON形式で回答: {{"winner": "A" or "B" or "tie", "reason": "簡潔な理由
     text = response.choices[0].message.content
     return json.loads(text)
 
-# モデルをロード
+# 모델 불러오기
 model_pretrain = GPT.load_from(model_paths['pretrain'], device=device)
 model_dpo = GPT.load_from(model_paths['dpo'], device=device)
 
-# 結果を記録
+# 결과 기록
 results = []
 wins = {"pretrain": 0, "dpo": 0, "tie": 0}
 
@@ -69,14 +69,14 @@ for i in range(num_comparisons):
     print(f"Comparison {i+1}/{num_comparisons}")
     print('='*60)
 
-    # 両モデルでストーリーを生成
+    # 두 모델로 스토리 생성
     story_pretrain = generate(model_pretrain, tokenizer, prompt, max_new_tokens, temperature)
     story_dpo = generate(model_dpo, tokenizer, prompt, max_new_tokens, temperature)
 
     print(f"\n[Pretrain]: {story_pretrain[:100]}...")
     print(f"\n[DPO]: {story_dpo[:100]}...")
 
-    # 位置バイアスを避けるため、ランダムに順序を入れ替え
+    # 위치 편향을 방지하기 위해 순서를 무작위로 바꿈
     import random
     if random.random() < 0.5:
         story_a, story_b = story_pretrain, story_dpo
@@ -85,7 +85,7 @@ for i in range(num_comparisons):
         story_a, story_b = story_dpo, story_pretrain
         mapping = {"A": "dpo", "B": "pretrain"}
 
-    # LLM-as-a-Judgeで比較
+    # LLM-as-a-Judge로 비교
     judgment = compare_stories(client, story_a, story_b)
 
     winner_label = judgment["winner"]
@@ -96,8 +96,8 @@ for i in range(num_comparisons):
 
     wins[winner] += 1
 
-    print(f"\n🏆 Winner: {winner}")
-    print(f"   Reason: {judgment['reason']}")
+    print(f"\n🏆 승자: {winner}")
+    print(f"   이유: {judgment['reason']}")
 
     results.append({
         "story_pretrain": story_pretrain,
@@ -106,17 +106,17 @@ for i in range(num_comparisons):
         "reason": judgment["reason"]
     })
 
-# サマリー出力
+# 요약 출력
 print("\n" + "="*60)
-print("📊 PAIRWISE COMPARISON RESULTS")
+print("📊 일대일 비교 결과")
 print("="*60)
 
 total = num_comparisons
-print(f"\n  Pretrain wins: {wins['pretrain']:3d} ({wins['pretrain']/total*100:5.1f}%)")
-print(f"  DPO wins:      {wins['dpo']:3d} ({wins['dpo']/total*100:5.1f}%)")
-print(f"  Ties:          {wins['tie']:3d} ({wins['tie']/total*100:5.1f}%)")
+print(f"\n  사전 학습 모델 승리: {wins['pretrain']:3d} ({wins['pretrain']/total*100:5.1f}%)")
+print(f"  DPO 모델 승리:      {wins['dpo']:3d} ({wins['dpo']/total*100:5.1f}%)")
+print(f"  무승부:          {wins['tie']:3d} ({wins['tie']/total*100:5.1f}%)")
 
-# 勝率（tieを除く）
+# 승률(무승부 제외)
 if wins['pretrain'] + wins['dpo'] > 0:
     dpo_winrate = wins['dpo'] / (wins['pretrain'] + wins['dpo']) * 100
-    print(f"\n  DPO win rate (excluding ties): {dpo_winrate:.1f}%")
+    print(f"\n  DPO 모델 승률(무승부 제외): {dpo_winrate:.1f}%")

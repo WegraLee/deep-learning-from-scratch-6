@@ -89,14 +89,14 @@ class BPETokenizer:
         texts = re.split(pattern, input_text)
         all_ids = []
 
-        # show_progressがTrueならtqdmで進捗表示
+        # show_progress가 True이면 tqdm으로 진행 상황 표시
         texts = tqdm(texts, desc="Encoding") if show_progress else texts
 
         for text in texts:
             if text == self.end_token:
                 all_ids.append(self.end_token_id)
             else:
-                # 各事前トークンをBPEエンコード
+                # 각 사전 토큰을 BPE로 인코딩
                 for pretoken in pretokenize(text):
                     ids = self._encode_text(pretoken)
                     all_ids.extend(ids)

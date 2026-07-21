@@ -14,7 +14,7 @@ from codebot.tokenizer import BPETokenizer
 from codebot.utils import generate, get_device
 
 
-# データセット
+# 데이터셋
 class GRPODataset(Dataset):
     def __init__(self, tokenizer):
         self.tokenizer = tokenizer
@@ -45,7 +45,7 @@ class GRPODataset(Dataset):
             all_ids.append(ids)
             all_masks.append(mask)
 
-        # パディング
+        # 패딩
         max_len = max(len(ids) for ids in all_ids)
         padded_ids = []
         padded_masks = []
@@ -60,19 +60,19 @@ class GRPODataset(Dataset):
         return ids, mask
 
 
-# 報酬関数
+# 보상 함수
 def calculate_reward(ground_truth, response):
     try:
         matches = re.findall(r'(-?\d+)', response)
         if matches:
-            predicted = int(matches[-1])  # 最後の数値を取得
+            predicted = int(matches[-1])  # 마지막 정수 가져오기
             return 1.0 if predicted == ground_truth else 0.0
         return 0.0
     except:
         return 0.0
 
 
-# グループ生成
+# 그룹 생성
 def generate_group(model, tokenizer, prompts, gts, group_size):
     all_prompts = []
     all_responses = []
@@ -95,7 +95,7 @@ def generate_group(model, tokenizer, prompts, gts, group_size):
 
     return all_prompts, all_responses, torch.stack(all_advantages)
 
-# 損失関数
+# 손실 함수
 def compute_probs(model, ids):
     logits = model(ids)  # (B, C, V)
     probs = F.softmax(logits[:, :-1, :], dim=-1)  # (B, C-1, V)
@@ -108,84 +108,84 @@ def compute_probs(model, ids):
     return token_probs
 
 def grpo_loss(model, old_model, ids, mask, advantages, epsilon=0.2):
-    # 現在モデルの各トークンの確率
+    # 현재 모델의 토큰별 확률
     probs = compute_probs(model, ids)
-    # 古いモデルの各トークンの確率
+    # 옛 모델의 토큰별 확률
     with torch.no_grad():
         old_probs = compute_probs(old_model, ids)
 
-    # トークンごとの確率比（0除算防止のため微小値を加算）
+    # 토큰별 확률비(0으로 나눠지는 일을 막기 위해 작은 값을 더함)
     ratio = probs / (old_probs + 1e-8)
     advantages = advantages.unsqueeze(-1)
 
     unclipped = ratio * advantages
     clipped = torch.clamp(ratio, 1 - epsilon, 1 + epsilon) * advantages
 
-    mask = mask[:, 1:]  # マスクもシフト
+    mask = mask[:, 1:]  # 마스크도 한 칸 시프트
     token_objective = torch.min(unclipped, clipped) * mask
 
-    # サンプル数 (batch_size × group_size) で正規化
+    # 샘플 수(batch_size × group_size)로 정규화
     n_samples = ids.size(0)  # batch_size × group_size
     return -token_objective.sum() / n_samples
 
 
-# 設定
+# 설정
 device = get_device()
 tokenizer_path = 'codebot/merge_rules.pkl'
 sft_model_path = 'codebot/model_sft.pt'
 grpo_model_save_path = 'codebot/model_grpo.pt'
 
-# ハイパーパラメータ
+# 하이퍼파라미터
 learning_rate = 7e-6
 max_iters = 500
-n_update_per_generation = 2  # 同じ生成データに対しての更新回数
+n_update_per_generation = 2  # 같은 생성 데이터로 갱신하는 횟수
 eval_interval = 10
-epsilon = 0.2  # クリッピング範囲
-group_size = 8  # グループサイズ
+epsilon = 0.2   # 클리핑 범위
+group_size = 8  # 그룹 크기
 batch_size = 32
 
-# 初期化
+# 초기화
 tokenizer = BPETokenizer.load_from(tokenizer_path)
 model = GPT.load_from(sft_model_path, device=device)
 optimizer = torch.optim.AdamW(model.parameters(), lr=learning_rate)
 
-old_model = GPT.load_from(sft_model_path, device=device)  # 古いモデル
+old_model = GPT.load_from(sft_model_path, device=device)  # 옛 모델
 old_model.eval()
 
 dataset = GRPODataset(tokenizer)
 dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=True)
 data_iter = cycle(dataloader)
 
-# 学習ループ
+# 학습 루프
 accuracies = []
 current_accuracy = 0.0
 pbar = tqdm(range(max_iters))
 
 for i in pbar:
-    # バッチデータを取得
+    # 배치 데이터 가져오기
     prompts, gts = next(data_iter)
 
-    # 古いモデル（old_model）を更新
+    # 옛 모델(old_model) 갱신
     old_model.load_state_dict(model.state_dict())
 
-    # 古いモデルで複数サンプルを生成し、報酬とアドバンテージを計算
+    # 옛 모델로 여러 샘플을 생성하고, 보상과 어드밴티지 계산
     all_prompts, all_responses, all_advantages = generate_group(
         old_model, tokenizer, prompts, gts, group_size
     )
 
-    # バッチデータを作成
+    # 배치 데이터 만들기
     ids, mask = dataset.get_batch(all_prompts, all_responses, device)
     all_advantages = all_advantages.to(device)
 
-    # 生成データに対して複数回更新
+    # 생성 데이터로 여러 번 갱신
     for _ in range(n_update_per_generation):
         optimizer.zero_grad()
         loss = grpo_loss(model, old_model, ids, mask, all_advantages, epsilon)
         loss.backward()
-        torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=1.0)  # 勾配クリッピング
+        torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=1.0)  # 기울기 클리핑
         optimizer.step()
 
-    # 定期的に評価
+    # 주기적으로 평가
     if i % eval_interval == 0:
         model.eval()
         correct, total = 0, 0
@@ -201,7 +201,7 @@ for i in pbar:
 
     pbar.set_postfix({'loss': f'{loss.item():.4f}', 'acc': f'{current_accuracy:.1f}%'})
 
-# 学習済みモデルを保存
+# 학습된 모델 저장
 model.save(grpo_model_save_path)
 
 plt.figure()

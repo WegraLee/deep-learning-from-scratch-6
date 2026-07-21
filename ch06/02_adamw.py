@@ -45,32 +45,32 @@ class AdamW(Optimizer):
                 state['t'] += 1
                 t = state['t']
 
-                # 1次モーメントと2次モーメントの更新
+                # 1차 모멘트와 2차 모멘트 갱신
                 m, v = state['m'], state['v']
                 m = beta1 * m + (1 - beta1) * grad
                 v = beta2 * v + (1 - beta2) * grad**2
                 state['m'], state['v'] = m, v
 
-                # バイアス補正
+                # 편향 보정
                 m_hat = m / (1 - beta1**t)
                 v_hat = v / (1 - beta2**t)
 
                 lr, eps, wd = group['lr'], group['eps'], group['weight_decay']
-                # パラメータ更新
+                # 파라미터 갱신과 가중치 감쇠 적용
                 p.data = p.data - lr * m_hat / (v_hat.sqrt() + eps) - lr * wd * p.data
 
 
 torch.manual_seed(0)
 
-# シンプルな線形モデル
+# 단순한 선형 모델
 model = torch.nn.Linear(2, 1)
 # optimizer = AdamW(model.parameters(), lr=0.1)
 optimizer = torch.optim.AdamW(model.parameters(), lr=0.1)
-# ダミーデータで学習
+# 학습용 더미 데이터
 x = torch.tensor([[1.0, 2.0]])
 y = torch.tensor([[3.0]])
 
-# 数ステップ学習してlossの減少を確認
+# 몇 스텝 학습하여 손실이 줄어드는지 확인
 for step in range(5):
     output = model(x)
     loss = (output - y).pow(2).mean()

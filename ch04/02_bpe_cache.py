@@ -32,51 +32,51 @@ def merge(ids, pair, new_id):
     return merged_ids
 
 def train_bpe(input_text, vocab_size, end_token="<|endoftext|>"):
-    # 特殊トークンで分割
+    # 특수 토큰을 기준으로 분할
     texts = input_text.split(end_token)
 
-    # 各テキスト片を事前トークン化
+    # 각 텍스트 조각을 사전 토큰화
     pretoken_counts = defaultdict(int)
-    for text in tqdm(texts, desc="Pretokenizing"):  # 進捗表示のためtqdmを使用
+    for text in tqdm(texts, desc="Pretokenizing"):  # tqdm으로 진행 상황 표시
         for pretoken in pretokenize(text):
             pretoken_counts[pretoken] += 1
 
-    # 事前トークンをID列に変換
+    # 사전 토큰을 ID열로 변환
     ids_counts = {tuple(pretoken.encode("utf-8")): count for pretoken, count in pretoken_counts.items()}
 
     num_merges = vocab_size - 256 - 1
     merge_rules = {}
-    pair_to_ids = defaultdict(set)  # キャッシュ
+    pair_to_ids = defaultdict(set)  # 캐시
 
     pair_counts = defaultdict(int)
     for ids, count in ids_counts.items():
         count_pairs(ids, count, pair_counts)
-        for pair in zip(ids, ids[1:]):  # キャッシュに登録
+        for pair in zip(ids, ids[1:]):  # 캐시에 등록
             pair_to_ids[pair].add(ids)
 
     for step in tqdm(range(num_merges), desc="Training BPE"):
-        if not pair_counts:  # ペアが存在しない場合の処理
+        if not pair_counts:  # ID 쌍이 존재하지 않으면 루프 종료
             break
 
-        # 最頻出ペアを選択
+        # 가장 흔한 ID 쌍 선택
         # best_pair = max(pair_counts, key=pair_counts.get)
         best_pair = max(pair_counts, key=lambda pair: (pair_counts[pair], pair[0], pair[1]))
         new_id = 256 + step
         merge_rules[best_pair] = new_id
 
-        # best_pairを含むids列をキャッシュから取得
+        # best_pair가 포함된 ID열을 캐시에서 가져옴
         affected_ids = pair_to_ids[best_pair]
-        del pair_to_ids[best_pair]  # もう使わないので削除
+        del pair_to_ids[best_pair]  # 더 이상 사용하지 않으므로 삭제
 
-        # 影響のあるID列だけを更新
+        # 영향을 받는 ID열만 갱신
         for ids in affected_ids:
             ids_count = ids_counts[tuple(ids)]
             new_ids = merge(ids, best_pair, new_id)
 
-            del ids_counts[tuple(ids)]  # 古いID列を削除
-            ids_counts[tuple(new_ids)] = ids_count  # 新しいID列を追加
+            del ids_counts[tuple(ids)]              # 기존 ID열 삭제
+            ids_counts[tuple(new_ids)] = ids_count  # 새 ID열 추가
 
-            # 古いペア頻度を減少
+            # 기존 ID 쌍 빈도 감소
             old_counts = count_pairs(ids)
             for pair, count in old_counts.items():
                 pair_counts[pair] -= count * ids_count
@@ -84,7 +84,7 @@ def train_bpe(input_text, vocab_size, end_token="<|endoftext|>"):
                     del pair_counts[pair]
                 pair_to_ids[pair].discard(tuple(ids))
 
-            # 新しいペア頻度を増加
+            # 새로운 ID 쌍 빈도 증가
             new_counts = count_pairs(new_ids)
             for pair, count in new_counts.items():
                 pair_counts[pair] += count * ids_count
@@ -93,7 +93,7 @@ def train_bpe(input_text, vocab_size, end_token="<|endoftext|>"):
     return merge_rules
 
 
-vocab_size = 1000  # 語彙サイズの設定
+vocab_size = 1000  # 어휘 크기 설정
 file_path = "codebot/tiny_codes.txt"
 text = open(file_path).read()
 merge_rules = train_bpe(text, vocab_size)

@@ -10,59 +10,59 @@ from codebot.model import Block
 class GPT(nn.Module):
     def __init__(self, vocab_size, max_context_len, embed_dim, n_head, n_layer, ff_dim, dropout_rate):
         super().__init__()
-        self.vocab_size = vocab_size            # 語彙サイズ
-        self.max_context_len = max_context_len  # 最大コンテキスト長
-        self.embed_dim = embed_dim              # 埋め込み次元数
-        self.n_head = n_head                    # Attentionのヘッド数
-        self.n_layer = n_layer                  # Transformerブロックの数
-        self.ff_dim = ff_dim                    # FFNの隠れ層サイズ
-        self.dropout_rate = dropout_rate        # ドロップアウト率
+        self.vocab_size = vocab_size            # 어휘 크기
+        self.max_context_len = max_context_len  # 최대 컨텍스트 길이
+        self.embed_dim = embed_dim              # 임베딩 차원 수
+        self.n_head = n_head                    # 어텐션 헤드 수
+        self.n_layer = n_layer                  # 트랜스포머 블록 수
+        self.ff_dim = ff_dim                    # FFN의 은닉층 차원 수
+        self.dropout_rate = dropout_rate        # 드롭아웃 비율
 
-        # 埋め込み層
+        # 임베딩층
         self.embed = nn.Embedding(vocab_size, embed_dim)
         self.pos_embed = nn.Embedding(max_context_len, embed_dim)
         self.dropout = nn.Dropout(dropout_rate)
 
-        # Transformerブロック
+        # 트랜스포머 블록
         self.blocks = nn.ModuleList([
             Block(embed_dim, n_head, ff_dim, dropout_rate)
             for _ in range(n_layer)
         ])
 
-        # 出力層
+        # 출력층
         self.norm = nn.LayerNorm(embed_dim)
         self.unembed = nn.Linear(embed_dim, vocab_size)
 
-        # 重み共有
+        # 가중치 공유
         self.embed.weight = self.unembed.weight
 
-        # 重みの初期化
+        # 가중치 초기화
         self.apply(self._init_weights)
 
     def _init_weights(self, module):
-        if isinstance(module, nn.Linear):
+        if isinstance(module, nn.Linear):       # 선형 변환층 가중치 초기화
             torch.nn.init.normal_(module.weight, mean=0.0, std=0.02)
             if module.bias is not None:
                 torch.nn.init.zeros_(module.bias)
-        elif isinstance(module, nn.Embedding):
+        elif isinstance(module, nn.Embedding):  # 임베딩층 가중치 초기화
             torch.nn.init.normal_(module.weight, mean=0.0, std=0.02)
 
     def forward(self, ids):
-        B, C = ids.shape  # B: バッチサイズ、C: コンテキスト長
+        B, C = ids.shape  # B: 배치 크기, C: 컨텍스트 길이
         device = ids.device
 
-        # 埋め込み
+        # 임베딩
         pos = torch.arange(0, C, dtype=torch.long, device=device)
         emb = self.embed(ids)
         pos_emb = self.pos_embed(pos)
         x = self.dropout(emb + pos_emb)
 
-        # Transformerブロック
+        # 트랜스포머 블록
         for block in self.blocks:
             x = block(x)
         x = self.norm(x)
 
-        # 出力
+        # 출력
         logits = self.unembed(x)  # (B, C, vocab_size)
         return logits
 
@@ -92,7 +92,7 @@ class GPT(nn.Module):
             ff_dim=checkpoint['ff_dim'],
             dropout_rate=checkpoint['dropout_rate']
         )
-        # 重みの読み込み
+        # 가중치 불러오기
         model.load_state_dict(checkpoint['model_state_dict'])
         model.to(device)
 
@@ -107,11 +107,11 @@ n_layer = 6
 ff_dim = 4 * embed_dim
 dropout_rate = 0.1
 
-# モデルを作成
+# 모델 생성
 model = GPT(vocab_size, max_context_len, embed_dim, n_head,
              n_layer, ff_dim, dropout_rate)
 
-# 動作テスト
+# 동작 확인
 dummy_input = torch.randint(0, vocab_size, (1, max_context_len))
 logits = model(dummy_input)
-print(f"出力形状: {logits.shape}")
+print(f"출력 형상: {logits.shape}")

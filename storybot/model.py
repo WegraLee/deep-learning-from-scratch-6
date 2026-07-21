@@ -12,7 +12,7 @@ class RoPE(nn.Module):
         half_ids = torch.arange(0, half)
         inv_freq = 1.0 / (theta ** ( (2.0 * half_ids) / key_dim ))  # (half,)
 
-        positions = torch.arange(max_context_len)  # (max_context_len,)
+        positions = torch.arange(max_context_len)        # (max_context_len,)
         angles = positions[:, None] * inv_freq[None, :]  # (max_context_len, half)
 
         cos = torch.cos(angles)  # (max_context_len, half)
@@ -24,11 +24,11 @@ class RoPE(nn.Module):
     def forward(self, x, offset=0):
         batch_size, num_head, context_len, key_dim = x.shape
 
-        # 入力の型を保存し、float32で計算
+        # 입력 데이터 타입을 저장하고, float32로 계산
         input_dtype = x.dtype
         x = x.float()
 
-        # offsetを考慮して位置エンコーディングを取得
+        # 오프셋을 고려하여 위치 인코딩을 가져옴
         max_context_len = self.cos_cache.size(0)
         if offset + context_len > max_context_len:
             offset = max_context_len - context_len
@@ -45,7 +45,7 @@ class RoPE(nn.Module):
         out = torch.stack([x_rot_even, x_rot_odd], dim=-1)
         out = out.reshape(batch_size, num_head, context_len, key_dim)
 
-        return out.to(input_dtype)  # 元の型に戻す
+        return out.to(input_dtype)  # 원래 타입으로 복원
 
 class MultiHeadAttention(nn.Module):
     def __init__(self, embed_dim, n_head, head_dim, rope=None):
@@ -61,10 +61,10 @@ class MultiHeadAttention(nn.Module):
 
         self.rope = rope
 
-        # KV-Cache用の変数を追加
-        self.k_cache = None  # Keyのキャッシュ
-        self.v_cache = None  # Valueのキャッシュ
-        self.cache_offset = 0  # 現在のキャッシュ位置を追跡
+        # KV 캐시용 변수 추가
+        self.k_cache = None    # 키 캐시
+        self.v_cache = None    # 밸류 캐시
+        self.cache_offset = 0  # 현재 캐시 위치 추적
 
     def forward(self, x, use_cache=False):
         B, C, E = x.shape
@@ -78,7 +78,7 @@ class MultiHeadAttention(nn.Module):
         K = K.view(B, C, H, D).transpose(1, 2)
         V = V.view(B, C, H, D).transpose(1, 2)
 
-        # RoPEにoffsetを渡す
+        # RoPE에 오프셋 전달
         if self.rope is not None:
             if use_cache:
                 Q = self.rope(Q, self.cache_offset)
@@ -87,35 +87,35 @@ class MultiHeadAttention(nn.Module):
                 Q = self.rope(Q)
                 K = self.rope(K)
 
-        # KV-Cacheの処理
+        # KV 캐시 처리
         if use_cache:
-            # Prefill（初回）かDecode（2回目以降）かを判定
+            # 프리필(첫 호출)인지 디코드(두 번째 호출 이후)인지 판별
             is_first_call = (self.k_cache is None)
 
             if is_first_call:
-                # 初回:キャッシュを初期化
+                # 첫 호출: 캐시 초기화
                 self.k_cache = K
                 self.v_cache = V
             else:
-                # 2回目以降:新しいKeyとValueをキャッシュに追加
+                # 두 번째 호출 이후: 새로운 Key와 Value를 캐시에 추가
                 self.k_cache = torch.cat([self.k_cache, K], dim=2)
                 self.v_cache = torch.cat([self.v_cache, V], dim=2)
 
-            # オフセットを更新(次のトークンの位置へ)
+            # 오프셋 갱신(다음 토큰 위치로 이동)
             self.cache_offset += C
 
-            # キャッシュされた全てのKeyとValueを使用
+            # 캐시된 모든 키와 밸류 사용
             K = self.k_cache
             V = self.v_cache
 
-        # 通常のAttention計算
+        # 일반적인 어텐션 계산
         scores = torch.matmul(Q, K.transpose(-2, -1))
         scores = scores / (D ** 0.5)
 
-        # Causal Maskの適用
-        # - 学習時（use_cache=False）: 常に適用
-        # - Prefill（初回・プロンプト全体処理）: 適用（各トークンは前方のみ）
-        # - Decode（2回目以降・1トークン生成）: 不要（新トークンは全キャッシュにattend）
+        # 인과 마스크 적용
+        # - 학습할 때(use_cache=False): 항상 적용
+        # - 프리필(첫 호출, 전체 프롬프트 처리): 적용(각 토큰은 이전 위치만 참조)
+        # - 디코드(두 번째 호출 이후, 토큰 하나 생성): 불필요(새 토큰은 전체 캐시를 참조)
         if not use_cache or (use_cache and is_first_call):
             mask = torch.tril(torch.ones(C, C, device=scores.device))
             scores = scores.masked_fill(mask == 0, float('-inf'))
@@ -129,7 +129,7 @@ class MultiHeadAttention(nn.Module):
         return output
 
     def clear_cache(self):
-        """キャッシュをクリアする"""
+        """캐시 비우기"""
         self.k_cache = None
         self.v_cache = None
         self.cache_offset = 0
@@ -170,7 +170,7 @@ class Block(nn.Module):
         return x
 
     def clear_cache(self):
-        """キャッシュをクリアする"""
+        """캐시 비우기"""
         self.attn.clear_cache()
 
 
@@ -261,10 +261,10 @@ if __name__ == "__main__":
     ff_dim = int(embed_dim * 8 / 3)
     theta = 10000
 
-    # モデルを作成
+    # 모델 생성
     model = GPT(vocab_size, max_context_len, embed_dim, n_head,
                 n_layer, ff_dim, theta)
-    # 動作テスト
+    # 동작 검증
     dummy_input = torch.randint(0, vocab_size, (1, max_context_len))
     logits = model(dummy_input)
-    print(f"出力形状: {logits.shape}")
+    print(f"출력 형상: {logits.shape}")

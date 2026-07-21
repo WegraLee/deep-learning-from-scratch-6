@@ -28,37 +28,37 @@ def merge(ids, pair, new_id):
     return merged_ids
 
 def train_bpe(input_text, vocab_size, end_token="<|endoftext|>"):
-    # 特殊トークンでテキストを分割
+    # 특수 토큰을 기준으로 분할
     texts = input_text.split(end_token)
     ids_list = [list(text.encode("utf-8")) for text in texts]
 
-    # 基本語彙（0-255）+ 終了トークン用（1個）を除いた分がマージ回数
+    # 기본 어휘(0-255) + 종료 토큰 1개를 제외한 수만큼 병합
     num_merges = vocab_size - 256 - 1
     merge_rules = {}
 
     for step in range(num_merges):
-        # 隣接ペアの頻度を集計
+        # 인접 쌍의 빈도 집계
         counts = defaultdict(int)
         for ids in ids_list:
             counts = count_pairs(ids, counts)
 
-        # ペアが存在しない場合の処理
+        # 병합 가능한 쌍이 없으면 루프 종료
         if not counts:
             break
 
-        # 最頻出ペアを選択
+        # 가장 빈번한 토큰 쌍 선택
         best_pair = max(counts, key=counts.get)
         # best_pair = max(counts, key=lambda pair: (counts[pair], pair[0], pair[1]))
         new_id = 256 + step
         merge_rules[best_pair] = new_id
 
-        # マージを実行
+        # 병합
         for i in range(len(ids_list)):
             ids_list[i] = merge(ids_list[i], best_pair, new_id)
 
     return merge_rules
 
-# 使用例
+# 사용 예
 sample_text = "Hello world!<|endoftext|>This is BPE training."
 
 merge_rules = train_bpe(sample_text, vocab_size=260)

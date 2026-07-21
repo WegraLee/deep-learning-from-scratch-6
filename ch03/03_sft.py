@@ -13,14 +13,14 @@ from codebot.model import GPT
 from codebot.tokenizer import BPETokenizer
 from codebot.utils import get_device
 
-# 設定
+# 설정
 device = get_device()
 data_path = 'codebot/tiny_codes_sft.json'
 tokenizer_path = 'codebot/merge_rules.pkl'
 pretrain_model_path = 'codebot/model_pretrain.pt'
 sft_model_save_path = 'codebot/model_sft.pt'
 
-# ハイパーパラメータ
+# 하이퍼파라미터
 context_len = 256
 batch_size = 32
 learning_rate = 3e-4
@@ -39,27 +39,28 @@ class SFTDataset(Dataset):
             ids, labels = self._create_sample(item['instruction'], item['response'])
             self.samples.append((ids, labels))
 
+    # 샘플 생성
     def _create_sample(self, instruction, response):
-        # プロンプトとレスポンスをフォーマット
+        # 프롬프트(지시)와 응답 포맷팅
         prompt = f"### Instruction:\n{instruction}\n\n### Response:\n"
         response = f"{response}<|endoftext|>"
 
-        # トークン化
+        # 토큰화
         prompt_ids = self.tokenizer.encode(prompt)
         response_ids = self.tokenizer.encode(response)
 
-        # 入力系列とラベルの作成（プロンプト部分は-100でマスク）
+        # 입력 시퀀스와 레이블 생성(프롬프트 부분은 -100으로 마스킹)
         ids = prompt_ids + response_ids
         labels = [-100] * len(prompt_ids) + response_ids
 
-        # 言語モデル用にシフト（入力と正解を1つずらす）
+        # 언어 모델용으로 시프트(입력과 정답이 한 칸씩 어긋나게)
         ids = ids[:-1]
         labels = labels[1:]
 
-        # context_lenに合わせてパディングまたは切り詰め
+        # context_len에 맞춰 패딩 혹은 잘라내기
         pad_len = self.context_len - len(ids)
         if pad_len > 0:
-            ids = ids + [0] * pad_len  # パディングIDとして0を使用
+            ids = ids + [0] * pad_len  # 패딩 ID로 0 사용
             labels = labels + [-100] * pad_len
         elif pad_len < 0:
             ids = ids[:self.context_len]
@@ -67,6 +68,7 @@ class SFTDataset(Dataset):
 
         return ids, labels
 
+    # DataLoader용 메서드
     def __len__(self):
         return len(self.samples)
 
@@ -76,16 +78,16 @@ class SFTDataset(Dataset):
                torch.tensor(labels, dtype=torch.long)
 
 
-# トークナイザとデータセットの準備
+# 토크나이저와 데이터셋 준비
 tokenizer = BPETokenizer.load_from(tokenizer_path)
 dataset = SFTDataset(data_path, tokenizer, context_len)
 dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=True)
 
-# モデルとオプティマイザ
+# 모델과 옵티마이저
 model = GPT.load_from(pretrain_model_path, device=device)
 optimizer = torch.optim.AdamW(model.parameters(), lr=learning_rate)
 
-# 学習ループ
+# 학습 루프
 losses = []
 data_iter = cycle(dataloader)
 pbar = tqdm(range(max_iters))
@@ -98,7 +100,7 @@ for i in pbar:
     loss = F.cross_entropy(
         logits.view(-1, logits.size(-1)),
         batch_y.view(-1),
-        ignore_index=-100
+        ignore_index=-100  # 레이블이 -100인 위치를 손실 계산에서 제외
     )
 
     optimizer.zero_grad()
@@ -108,7 +110,7 @@ for i in pbar:
     losses.append(loss.item())
     pbar.set_postfix({'loss': f'{loss.item():.4f}'})
 
-# 結果を保存
+# 결과 저장
 plt.figure(figsize=(10, 6))
 plt.plot(losses)
 plt.xlabel('Iteration')
@@ -116,5 +118,5 @@ plt.ylabel('Loss')
 plt.grid(True)
 plt.savefig('loss_sft.png')
 
-# モデルの保存
+# 모델 저장
 model.save(sft_model_save_path)

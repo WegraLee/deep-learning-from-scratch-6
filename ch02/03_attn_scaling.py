@@ -17,12 +17,12 @@ k = np.random.randn(d)
 dot_product = np.dot(q, k)
 scaled_dot_product = dot_product / np.sqrt(d)
 
-print('dot product:', dot_product)
-print('scaled dot product:', scaled_dot_product)
+print('내적:', dot_product)
+print('스케일링한 내적:', scaled_dot_product)
 
 
 d = 10
-num_samples = 10000  # 先ほどの内積の計算を10000回行う
+num_samples = 10000  # 앞서의 내적 계산을 10000번 반복
 
 dot_products = []
 scaled_dot_products = []
@@ -38,7 +38,7 @@ for _ in range(num_samples):
     scaled_dot_products.append(scaled_dot_product)
 
 
-# 結果をプロット
+# 결과를 그래프로 출력
 plt.figure(figsize=(10, 6))
 plt.hist(dot_products, bins=50, alpha=0.5, label='Without scaling')
 plt.hist(scaled_dot_products, bins=50, alpha=0.5, label='With scaling')

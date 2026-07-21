@@ -12,7 +12,7 @@ class RoPE(nn.Module):
         half_ids = torch.arange(0, half)
         inv_freq = 1.0 / (theta ** ( (2.0 * half_ids) / key_dim ))  # (half,)
 
-        positions = torch.arange(max_context_len)  # (max_context_len,)
+        positions = torch.arange(max_context_len)        # (max_context_len,)
         angles = positions[:, None] * inv_freq[None, :]  # (max_context_len, half)
 
         cos = torch.cos(angles)  # (max_context_len, half)
@@ -198,7 +198,7 @@ class GPT(nn.Module):
         return model
 
 
-# ハイパーパラメータ
+# 하이퍼파라미터
 vocab_size = 10000
 max_context_len = 256
 embed_dim = 384
@@ -207,10 +207,10 @@ n_layer = 6
 ff_dim = int(embed_dim * 8 / 3)
 theta = 10000
 
-# モデルの初期化
+# 모델 초기화
 model = GPT(vocab_size, max_context_len, embed_dim, n_head,
             n_layer, ff_dim, theta)
-# 動作テスト
+# 동작 확인
 batch_size = 8
 dummy_input = torch.randint(0, vocab_size, (batch_size, max_context_len))
 logits = model(dummy_input)

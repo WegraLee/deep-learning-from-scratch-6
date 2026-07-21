@@ -6,14 +6,14 @@ import numpy as np
 from codebot.tokenizer import BPETokenizer
 
 
-# トークナイザを読み込み
+# 토크나이저 불러오기
 tokenizer = BPETokenizer.load_from("codebot/merge_rules.pkl")
 
-# テキストをトークンIDに変換（進捗バーを表示）
+# 텍스트를 토큰 ID로 변환(진행률 표시)
 text = open("codebot/tiny_codes.txt").read()
 ids = tokenizer.encode(text, show_progress=True)
 
-# numpy配列に変換して保存
+# 넘파이 배열로 변환하여 저장
 ids_array = np.array(ids, dtype=np.uint16)
 ids_array.tofile("codebot/tiny_codes.bin")
 

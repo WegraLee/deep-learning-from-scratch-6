@@ -1,18 +1,18 @@
 import torch
 import torch.nn.functional as F
 
-# キー（映画のジャンル特性）
+# 키(영화의 장르 특성)
 K = torch.tensor([
-    [8, 2, 3],  # アクション重視の映画
-    [3, 9, 1],  # ドラマ重視の映画
-    [1, 2, 9],  # コメディ重視の映画
-    [5, 5, 5],  # バランスの取れた映画
-    [7, 6, 2],  # アクションドラマ
-    [2, 7, 6],  # コメディドラマ
-    [9, 1, 1],  # 純粋なアクション
+    [8, 2, 3],  # 액션 중심 영화
+    [3, 9, 1],  # 드라마 중심 영화
+    [1, 2, 9],  # 코미디 중심 영화
+    [5, 5, 5],  # 균형 잡힌 영화
+    [7, 6, 2],  # 액션 드라마
+    [2, 7, 6],  # 코미디 드라마
+    [9, 1, 1],  # 순수 액션 영화
 ], dtype=torch.float32)
 
-# バリュー（ユーザーの評価）
+# 밸류(사용자 평점)
 V = torch.tensor([
     [85],
     [70],
@@ -23,21 +23,21 @@ V = torch.tensor([
     [90]
 ], dtype=torch.float32)
 
-# 新しい映画のジャンル特性（複数のクエリ）
+# 새로 평가할 영화의 장르 특성(여러 쿼리)
 Q = torch.tensor([
-    [6, 4, 5],  # バランスの取れたアクション寄りの映画
-    [2, 8, 3],  # ドラマ重視の映画
-    [4, 3, 7],  # コメディ寄りの映画
+    [6, 4, 5],  # 균형 잡힌 액션 성향의 영화
+    [2, 8, 3],  # 드라마 중심 영화
+    [4, 3, 7],  # 코미디 성향의 영화
 ], dtype=torch.float32)
 
 def attention(Q, K, V):
-    similarity = torch.matmul(Q, K.t())     # QK^Tを計算
-    weights = F.softmax(similarity, dim=1)  # ソフトマックス関数
-    output = torch.matmul(weights, V)       # 重み付き和
+    similarity = torch.matmul(Q, K.t())     # QK^T 계산
+    weights = F.softmax(similarity, dim=1)  # 소프트맥스 함수
+    output = torch.matmul(weights, V)       # 가중합
     return output, weights
 
 predicted_ratings, weights = attention(Q, K, V)
 
-# 結果の表示
+# 결과 출력
 for movie, rating in zip(Q, predicted_ratings):
-    print(f"映画 {movie.numpy()} の予測評価: {rating.item():.2f}")
+    print(f"영화 {movie.numpy()}의 예측 평점: {rating.item():.2f}")

@@ -5,7 +5,7 @@ import torch.nn.functional as F
 class Attention(nn.Module):
     def __init__(self, embed_dim, key_dim):
         super().__init__()
-        # Q, K, Vの変換行列
+        # Q, K, V를 생성하는 변환 행렬
         self.W_q = nn.Linear(embed_dim, key_dim, bias=False)
         self.W_k = nn.Linear(embed_dim, key_dim, bias=False)
         self.W_v = nn.Linear(embed_dim, embed_dim, bias=False)
@@ -17,12 +17,12 @@ class Attention(nn.Module):
         K = self.W_k(x)    # K: (B, C, D)
         V = self.W_v(x)    # V: (B, C, E)
 
-        # Attentionマップの計算
-        K_t = K.transpose(-2, -1)  # (B, D, C)
+        # 어텐션 점수 계산
+        K_t = K.transpose(-2, -1)      # (B, D, C)
         scores = torch.matmul(Q, K_t)  # (B, C, C)
         scores = scores / (self.key_dim ** 0.5)
 
-        # マスクの適用
+        # 마스크 적용
         B, C, E = x.shape
         mask = torch.tril(torch.ones(C, C, device=scores.device))
         scores = scores.masked_fill(mask == 0, float('-inf'))

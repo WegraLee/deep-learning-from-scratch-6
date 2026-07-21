@@ -1,39 +1,39 @@
 import matplotlib.pyplot as plt
 import numpy as np
 
-# 日本語フォント設定
-plt.rcParams['font.family'] = 'Hiragino Sans'  # macOS
-# plt.rcParams['font.family'] = 'Yu Gothic'  # Windows
+# 한국어 폰트 설정
+plt.rcParams['font.family'] = 'Apple SD Gothic Neo'  # macOS
+# plt.rcParams['font.family'] = 'Malgun Gothic  # Windows
 
-# パラメータ
-warmup_ratio = 0.05  # ウォームアップ期間（全体の5%）
-eta_min_ratio = 0.1  # コサインアニーリングの最小学習率（最大の10%）
+# 파라미터
+warmup_ratio = 0.05  # 워밍업 기간(전체의 5%)
+eta_min_ratio = 0.1  # 코사인 어닐링의 최소 학습률(최대의 10%)
 
-# データ生成
+# 데이터 생성
 t = np.linspace(0, 1, 1000)
 
-# コサインアニーリング（ウォームアップ付き）
+# 코사인 어닐링(워밍업 포함)
 def cosine_annealing(t, warmup_ratio, eta_min_ratio):
     lr = np.zeros_like(t)
     for i, ti in enumerate(t):
         if ti < warmup_ratio:
-            # ウォームアップ: 0 -> 1
+            # 워밍업: 0 -> 1
             lr[i] = ti / warmup_ratio
         else:
-            # コサインアニーリング: 1 -> eta_min
+            # 코사인 어닐링: 1 -> eta_min
             progress = (ti - warmup_ratio) / (1 - warmup_ratio)
             lr[i] = eta_min_ratio + 0.5 * (1 - eta_min_ratio) * (1 + np.cos(np.pi * progress))
     return lr
 
-# D2Z（ウォームアップ付き）
+# D2Z(워밍업 포함)
 def d2z(t, warmup_ratio):
     lr = np.zeros_like(t)
     for i, ti in enumerate(t):
         if ti < warmup_ratio:
-            # ウォームアップ: 0 -> 1
+            # 워밍업: 0 -> 1
             lr[i] = ti / warmup_ratio
         else:
-            # 線形減衰: 1 -> 0
+            # 선형 감쇠: 1 -> 0
             progress = (ti - warmup_ratio) / (1 - warmup_ratio)
             lr[i] = 1 - progress
     return lr
@@ -41,32 +41,32 @@ def d2z(t, warmup_ratio):
 cosine_lr = cosine_annealing(t, warmup_ratio, eta_min_ratio)
 d2z_lr = d2z(t, warmup_ratio)
 
-# プロット作成
+# 플롯 생성
 fig, ax = plt.subplots(figsize=(10, 6))
 
-# ウォームアップ領域をグレーで塗りつぶし
+# 워밍업 구간을 회색으로 채움
 ax.axvspan(0, warmup_ratio, color='lightgray', alpha=0.5)
-ax.text(0.01, 1.02, 'ウォームアップ', fontsize=10, va='bottom')
+ax.text(0.01, 1.02, '워밍업', fontsize=10, va='bottom')
 
-# 学習率曲線
-ax.plot(t, cosine_lr, 'b-', linewidth=2, label='コサインアニーリング')
+# 학습률 곡선
+ax.plot(t, cosine_lr, 'b-', linewidth=2, label='코사인 어닐링')
 ax.plot(t, d2z_lr, color='orange', linestyle='--', linewidth=2, label='D2Z')
 
-# 軸の設定
+# 축 설정
 ax.set_xlim(0, 1)
 ax.set_ylim(0, 1.05)
 ax.set_xlabel('学習の進行度', fontsize=12)
 ax.set_ylabel('学習率', fontsize=12)
 
-# グリッド
+# 그리드
 ax.grid(True, linestyle='--', alpha=0.7)
 
-# 凡例
+# 범례
 ax.legend(loc='upper right', fontsize=12)
 
-# 余白調整
+# 여백 조정
 plt.tight_layout()
 
-# PNGで保存
+# PNG로 저장
 plt.savefig('lr_schedule.png', format='png', bbox_inches='tight')
 plt.close()

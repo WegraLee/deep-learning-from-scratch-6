@@ -14,11 +14,11 @@ from storybot.utils import get_device
 
 
 def get_lr(it, max_lr, warmup_iters, max_iters):
-    # ウォームアップ：0 -> max_lr
+    # 워밍업： 0 -> max_lr
     if it < warmup_iters:
         return max_lr * (it / warmup_iters)
 
-    # アニーリング：max_lr -> 0
+    # 어닐링： max_lr -> 0
     if it < max_iters:
         progress = (it - warmup_iters) / (max_iters - warmup_iters)
         return max_lr * (1.0 - progress)
@@ -36,14 +36,14 @@ def get_batch(data, context_len, batch_size, device, random=True, offset=0):
         if len(ix) == 0:
             return None, None
 
-    # バッチを作成
+    # 배치 생성
     x = torch.stack([torch.from_numpy(data[i:i+context_len].astype(np.int64)) for i in ix])
     y = torch.stack([torch.from_numpy(data[i+1:i+context_len+1].astype(np.int64)) for i in ix])
 
     return x.to(device), y.to(device)
 
 def evaluate(model, val_data, context_len, batch_size, device):
-    """Validation: 全データを順番に処理"""
+    """검증: 전체 데이터를 순서대로 처리"""
     model.eval()
     total_loss = 0.0
     total_tokens = 0
@@ -72,19 +72,19 @@ def evaluate(model, val_data, context_len, batch_size, device):
     model.train()
     return total_loss / total_tokens
 
-# 設定
+# 설정
 device = get_device()
 data_path = 'storybot/tiny_stories_train.bin'
 val_data_path = 'storybot/tiny_stories_valid.bin'
 tokenizer_path = 'storybot/merge_rules.pkl'
 model_save_path = 'storybot/model_pretrain.pt'
 
-# ハイパーパラメータ
+# 하이퍼파라미터
 context_len = 256
 vocab_size = 10000
 batch_size = 32
 learning_rate = 0.001  # max_lr
-warmup_iters = 200  # ウォームアップステップ数
+warmup_iters = 200     # 워밍업 스텝 수
 max_iters = 40000
 embed_dim = 512
 n_head = 16
@@ -93,13 +93,13 @@ ff_dim = 1344
 theta = 10000
 eval_iters = 500
 grad_clip = 1.0
-save_iters = [500, 5000]  # 保存するイテレーションのリスト
+save_iters = [500, 5000]  # 저장할 이터레이션 목록
 
-# データをmemmapで読み込み
+# 데이터를 메모리 맵으로 읽기
 train_data = np.memmap(data_path, dtype=np.uint16, mode='r')
 val_data = np.memmap(val_data_path, dtype=np.uint16, mode='r')
 
-# トークナイザ、モデル、オプティマイザ
+# 토크나이저, 모델, 옵티마이저
 tokenizer = BPETokenizer.load_from(tokenizer_path)
 model = GPT(
     vocab_size, context_len, embed_dim, n_head, n_layer, ff_dim, theta
@@ -116,17 +116,17 @@ val_losses = []
 val_iters = []
 
 for i in pbar:
-    # 学習率を更新
+    # 학습률 갱신
     lr = get_lr(i, learning_rate, warmup_iters, max_iters)
     for param_group in optimizer.param_groups:
         param_group['lr'] = lr
 
     batch_x, batch_y = get_batch(train_data, context_len, batch_size, device)
 
-    # 勾配をリセット
+    # 기울기 초기화
     optimizer.zero_grad()
 
-    # 順伝播と損失計算(Mixed Precision)
+    # 순전파와 손실 계산(혼합 정밀도)
     with autocast(device_type=device.type, dtype=torch.bfloat16):
         logits = model(batch_x)
         loss = F.cross_entropy(logits.view(-1, logits.size(-1)), batch_y.view(-1))
@@ -134,13 +134,13 @@ for i in pbar:
     loss.backward()
     torch.nn.utils.clip_grad_norm_(model.parameters(), grad_clip)
     optimizer.step()
-    # 特定のイテレーションでモデルを保存
+    # 특정 이터레이션에서 모델 저장
     if i in save_iters:
         save_path = f'storybot/model_iter_{i}.pt'
         model.save(save_path)
         print(f"\nモデルを保存しました（イテレーション {i}）: {save_path}")
 
-    # 定期的に評価
+    # 주기적으로 평가
     if (i % eval_iters) == 0 or i == max_iters - 1:
         val_loss = evaluate(model, val_data, context_len, batch_size, device)
         val_losses.append(val_loss)
@@ -148,7 +148,7 @@ for i in pbar:
     pbar.set_postfix({'loss': f'{loss.item():.4f}', 'val_loss': f'{val_loss:.6f}'})
 
 
-# Validation lossのグラフを描画
+# 검증 손실 그래프 그리기
 plt.figure(figsize=(10, 6))
 plt.plot(val_iters, val_losses)
 plt.xlabel('Iteration')

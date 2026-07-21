@@ -12,13 +12,13 @@ from tqdm import tqdm
 from codebot.model import GPT
 from codebot.utils import get_device
 
-# 設定
+# 설정
 device = get_device()
 data_path = 'codebot/tiny_codes.bin'
 tokenizer_path = 'codebot/merge_rules.pkl'
 model_save_path = 'codebot/model_pretrain.pt'
 
-# ハイパーパラメータ
+# 하이퍼파라미터
 context_len = 256
 vocab_size = 1000
 batch_size = 32
@@ -30,26 +30,30 @@ n_layer = 6
 ff_dim = 4 * embed_dim
 dropout_rate = 0.1
 
-# データセットクラス
+# 데이터셋 클래스
 class TokenDataset(Dataset):
     def __init__(self, tokens, context_len):
+        # 토큰열을 텐서로 변환하여 저장
         self.tokens = torch.tensor(tokens, dtype=torch.long)
         self.context_len = context_len
 
     def __len__(self):
+        # 꺼낼 수 있는 샘플 수 반환
         return len(self.tokens) - self.context_len
 
     def __getitem__(self, idx):
+        # 입력: idx번째부터 context_len개의 토큰
         x = self.tokens[idx:idx+self.context_len]
+        # 레이블: 한 칸 뒤에서 시작하는 같은 길이의 토큰열
         y = self.tokens[idx+1:idx+self.context_len+1]
         return x, y
 
-# データ準備
+# 데이터 준비
 ids = np.fromfile(data_path, dtype=np.uint16)
 dataset = TokenDataset(ids, context_len)
 dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=True)
 
-# モデル、オプティマイザ
+# 모델과 옵티마이저
 model = GPT(
     vocab_size=vocab_size,
     max_context_len=context_len,
@@ -62,10 +66,10 @@ model = GPT(
 optimizer = torch.optim.AdamW(model.parameters(), lr=learning_rate)
 
 total_params = sum(p.numel() for p in model.parameters())
-print(f"パラメータ数: {total_params:,} ({total_params/1e6:.1f}M)")
+print(f"파라미터 수: {total_params:,} ({total_params/1e6:.1f}M)")
 
 losses = []
-data_iter = cycle(dataloader)  # 無限ループ化
+data_iter = cycle(dataloader)  # 무한 반복
 pbar = tqdm(range(max_iters))
 
 for i in pbar:
@@ -82,7 +86,7 @@ for i in pbar:
     losses.append(loss.item())
     pbar.set_postfix({'loss': f'{loss.item():.4f}'})
 
-# 結果を保存
+# 결과 저장
 plt.figure(figsize=(10, 6))
 plt.plot(losses)
 plt.xlabel('Iteration')
@@ -90,4 +94,5 @@ plt.ylabel('Loss')
 plt.grid(True)
 plt.savefig('loss_pretrain.png')
 
+# 모델 저장
 model.save(model_save_path)

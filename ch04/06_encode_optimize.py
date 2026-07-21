@@ -32,20 +32,20 @@ class BPETokenizer:
         ids = list(text.encode("utf-8"))
 
         def get_merge_priority(pair):
-            return self.merge_rules.get(pair, float('inf'))  # 存在しないペアは最低優先度
+            return self.merge_rules.get(pair, float('inf'))  # 규칙 목록에 없는 ID 쌍은 우선순위를 가장 낮게 설정
 
         while len(ids) > 1:
-            # 現在のペアを取得（❶）
+            # 현재 ID열에 있는 인접한 ID 쌍들을 가져옴
             counts = count_pairs(ids)
 
-            # 最優先ペアを特定（❷）
+            # 우선순위가 가장 높은 ID 쌍 찾기
             best_pair = min(counts, key=get_merge_priority)
 
-            # マージ可能性の確認（❸）
+            # 병합할 수 있는지 확인
             if best_pair not in self.merge_rules:
                 break
 
-            # マージの実行（❹）
+            # 병합
             new_id = self.merge_rules[best_pair]
             ids = merge(ids, best_pair, new_id)
 

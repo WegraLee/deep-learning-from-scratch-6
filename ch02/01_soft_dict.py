@@ -1,6 +1,6 @@
 import numpy as np
 
-# ディクショナリの例
+# 딕셔너리 사용 예
 d = {
     'apple': 100,
     'banana': 200,
@@ -8,38 +8,38 @@ d = {
     'durian': 400
 }
 
-# キーを指定して値を取得
+# 키를 지정해 밸류 가져오기
 query = 'banana'
 print(d[query])  # 200
 
 
-# キー: (アクション性, ドラマ性, コメディ性) 各0〜10で表現
-# バリュー: ユーザーの評価点 (0〜100点)
+# 키: (액션성, 드라마성, 코미디성) 각각 0~10으로 표현
+# 밸류: 사용자가 매긴 평점(0~100점)
 movie_preferences = {
-    (8, 2, 3): 85,  # アクション重視の映画
-    (3, 9, 1): 70,  # ドラマ重視の映画
-    (1, 2, 9): 60,  # コメディ重視の映画
-    (5, 5, 5): 75,  # バランスの取れた映画
-    (7, 6, 2): 80,  # アクションドラマ
-    (2, 7, 6): 65,  # コメディドラマ
-    (9, 1, 1): 90,  # 純粋なアクション
+    (8, 2, 3): 85,   # 액션 중심 영화
+    (3, 9, 1): 70,   # 드라마 중심 영화
+    (1, 2, 9): 60,   # 코미디 중심 영화
+    (5, 5, 5): 75,   # 균형 잡힌 영화
+    (7, 6, 2): 80,   # 액션 드라마
+    (2, 7, 6): 65,   # 코미디 드라마
+    (9, 1, 1): 90,   # 순수 액션 영화
 }
 
-# 新しい映画
+# 새로 평가할 영화
 new_movie = (6, 4, 5)
 
 def soft_dictionary(query, dictionary):
-    # 類似度
+    # 유사도
     similarity = []
     for key in dictionary:
         s = np.dot(query, key)
         similarity.append(s)
 
-    # ソフトマックス
+    # 소프트맥스
     exp_similarity = np.exp(similarity)
     weights = exp_similarity / np.sum(exp_similarity)
 
-    # 重み付き和
+    # 가중합
     result = 0
     for weight, value in zip(weights, dictionary.values()):
         result += weight * value
@@ -49,7 +49,7 @@ def soft_dictionary(query, dictionary):
 
 predicted_rating, weights = soft_dictionary(new_movie, movie_preferences)
 
-print(f"新しい映画 {new_movie} の予測評価: {predicted_rating:.2f} 点")
-print("\n各映画の重み:")
+print(f"새로운 영화 {new_movie}의 예측 평점: {predicted_rating:.2f}점")
+print("\n각 영화의 가중치:")
 for key, weight in zip(movie_preferences.keys(), weights):
-    print(f"映画 {key}: {weight*100:.2f}%")
+    print(f"영화 {key}: {weight*100:.2f}%")

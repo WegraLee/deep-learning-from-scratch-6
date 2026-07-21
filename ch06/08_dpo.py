@@ -13,14 +13,14 @@ from storybot.model import GPT
 from storybot.tokenizer import BPETokenizer
 from storybot.utils import get_device
 
-# 設定
+# 설정
 device = get_device()
 data_path = 'storybot/tiny_stories_dpo.json'
 tokenizer_path = 'storybot/merge_rules.pkl'
 pretrain_model_path = 'storybot/model_pretrain.pt'
 dpo_model_save_path = 'storybot/model_dpo.pt'
 
-# ハイパーパラメータ
+# 하이퍼파라미터
 context_len = 256
 batch_size = 8
 learning_rate = 5e-6
@@ -29,7 +29,7 @@ max_iters = 1000
 
 
 class DPODataset(Dataset):
-    # コンストラクタ
+    # 생성자
     def __init__(self, data_path, tokenizer, context_len):
         self.tokenizer = tokenizer
         self.context_len = context_len
@@ -42,7 +42,7 @@ class DPODataset(Dataset):
             sample = self._create_sample(item['prompt'], item['chosen'], item['rejected'])
             self.samples.append(sample)
 
-    # パディングとマスクの作成
+    # 패딩과 마스크 생성
     def _pad_and_mask(self, ids, prompt_len):
         mask = [0] * prompt_len + [1] * (len(ids) - prompt_len)
 
@@ -56,7 +56,7 @@ class DPODataset(Dataset):
 
         return ids, mask
 
-    # サンプル作成
+    # 샘플 생성
     def _create_sample(self, prompt, chosen, rejected):
         prompt_ids = self.tokenizer.encode(prompt)
         chosen_ids = prompt_ids + self.tokenizer.encode(chosen)
@@ -68,7 +68,7 @@ class DPODataset(Dataset):
 
         return chosen_ids, chosen_mask, rejected_ids, rejected_mask
 
-    # DataLoader用メソッド
+    # DataLoader용 메서드
     def __len__(self):
         return len(self.samples)
 
@@ -83,29 +83,29 @@ class DPODataset(Dataset):
 
 
 def get_sequence_logprobs(model, ids, mask):
-    logits = model(ids)  # (B, C, V)
+    logits = model(ids)                                   # (B, C, V)
     log_probs = F.log_softmax(logits[:, :-1, :], dim=-1)  # (B, C-1, V)
-    labels = ids[:, 1:]  # (B, C-1)
+    labels = ids[:, 1:]                                   # (B, C-1)
 
     per_token_logprobs = torch.gather(
         log_probs, dim=-1, index=labels.unsqueeze(-1)
     ).squeeze(-1)  # (B, C-1)
-    # マスクを適用（応答部分のみ）
-    masked_logprobs = per_token_logprobs * mask[:, 1:]
+    
+    masked_logprobs = per_token_logprobs * mask[:, 1:]  # 마스크 적용(응답 부분만)
     return masked_logprobs.sum(dim=-1)  # (B,)
 
 
 def compute_dpo_loss(model, ref_model, chosen_ids, chosen_mask, rejected_ids, rejected_mask, beta):
-    # 現在のモデルのlog-prob
+    # 현재 모델의 로그 확률
     chosen_logprobs = get_sequence_logprobs(model, chosen_ids, chosen_mask)
     rejected_logprobs = get_sequence_logprobs(model, rejected_ids, rejected_mask)
 
-    # 参照モデルのlog-prob
+    # 참조 모델의 로그 확률
     with torch.no_grad():
         ref_chosen_logprobs = get_sequence_logprobs(ref_model, chosen_ids, chosen_mask)
         ref_rejected_logprobs = get_sequence_logprobs(ref_model, rejected_ids, rejected_mask)
 
-    # DPO loss
+    # DPO 손실
     logits = beta * (
         (chosen_logprobs - rejected_logprobs) -
         (ref_chosen_logprobs - ref_rejected_logprobs)
@@ -113,18 +113,18 @@ def compute_dpo_loss(model, ref_model, chosen_ids, chosen_mask, rejected_ids, re
     return -F.logsigmoid(logits).mean()
 
 
-# トークナイザとデータセットの準備
+# 토크나이저와 데이터셋 준비
 tokenizer = BPETokenizer.load_from(tokenizer_path)
 dataset = DPODataset(data_path, tokenizer, context_len)
 dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=True)
 
-# モデルとオプティマイザ
+# 모델과 옵티마이저
 model = GPT.load_from(pretrain_model_path, device=device)
 ref_model = GPT.load_from(pretrain_model_path, device=device)
 ref_model.eval()
 optimizer = torch.optim.AdamW(model.parameters(), lr=learning_rate)
 
-# 学習ループ
+# 학습 루프
 losses = []
 data_iter = cycle(dataloader)
 pbar = tqdm(range(max_iters))
@@ -148,7 +148,7 @@ for i in pbar:
     losses.append(loss.item())
     pbar.set_postfix({'loss': f'{loss.item():.4f}'})
 
-# 結果を保存
+# 결과 저장
 plt.figure(figsize=(10, 6))
 plt.plot(losses)
 plt.xlabel('Iteration')
