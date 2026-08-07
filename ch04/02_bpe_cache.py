@@ -76,7 +76,7 @@ def train_bpe(input_text, vocab_size, end_token="<|endoftext|>"):
             del ids_counts[tuple(ids)]              # 기존 ID열 삭제
             ids_counts[tuple(new_ids)] = ids_count  # 새 ID열 추가
 
-            # 기존 ID 쌍 빈도 감소
+            # 기존 ID 쌍 정보 갱신
             old_counts = count_pairs(ids)
             for pair, count in old_counts.items():
                 pair_counts[pair] -= count * ids_count
@@ -84,7 +84,7 @@ def train_bpe(input_text, vocab_size, end_token="<|endoftext|>"):
                     del pair_counts[pair]
                 pair_to_ids[pair].discard(tuple(ids))
 
-            # 새로운 ID 쌍 빈도 증가
+            # 새로운 ID 쌍 정보 갱신
             new_counts = count_pairs(new_ids)
             for pair, count in new_counts.items():
                 pair_counts[pair] += count * ids_count

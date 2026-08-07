@@ -41,7 +41,7 @@ class BPETokenizer:
             # 우선순위가 가장 높은 ID 쌍 찾기
             best_pair = min(counts, key=get_merge_priority)
 
-            # 병합할 수 있는지 확인
+            # 병합할 ID 쌍이 없다면 루프 종료
             if best_pair not in self.merge_rules:
                 break
 
