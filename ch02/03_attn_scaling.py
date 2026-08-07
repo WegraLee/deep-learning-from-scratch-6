@@ -45,5 +45,5 @@ plt.hist(scaled_dot_products, bins=50, alpha=0.5, label='With scaling')
 plt.legend()
 plt.show()
 
-print("Variances without scaling:", np.var(dot_products))
-print("Variances with scaling:", np.var(scaled_dot_products))
+print("분산(스케일링 없음):", np.var(dot_products))
+print("분산(스케일링 적용):", np.var(scaled_dot_products))
