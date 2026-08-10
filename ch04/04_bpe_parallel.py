@@ -139,7 +139,7 @@ def train_bpe(file_path, vocab_size, end_token="<|endoftext|>", num_processes=8,
 
         # 가장 자주 등장하는 쌍 선택
         # best_pair = max(pair_counts, key=pair_counts.get)
-        best_pair = max(pair_counts, key=lambda pair: (pair_counts[pair], pair[0], pair[1]))
+        best_pair = max(pair_counts, key=lambda pair: (pair_counts[pair], pair[0], pair[1]))  # 재현셩 확보용 동점 처리 (책 61쪽 참고)
         new_id = 256 + step
         merge_rules[best_pair] = new_id
 

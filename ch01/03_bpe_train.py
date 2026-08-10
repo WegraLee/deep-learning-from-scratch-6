@@ -48,7 +48,7 @@ def train_bpe(text, vocab_size):
 
         # 가장 빈번한 쌍 선택
         best_pair = max(counts, key=counts.get)
-        # best_pair = max(counts, key=lambda pair: (counts[pair], pair[0], pair[1]))
+        # best_pair = max(counts, key=lambda pair: (counts[pair], pair[0], pair[1]))  # 재현셩 확보용 동점 처리 (책 61쪽 참고)
 
         # 새로운 토큰 ID 할당
         new_id = 256 + step

@@ -123,13 +123,13 @@ def train_bpe(file_path, vocab_size, end_token="<|endoftext|>"):
 
         # 가장 자주 등장하는 쌍 선택
         # best_pair = max(pair_counts, key=pair_counts.get)
-        best_pair = max(pair_counts, key=lambda pair: (pair_counts[pair], pair[0], pair[1]))
+        best_pair = max(pair_counts, key=lambda pair: (pair_counts[pair], pair[0], pair[1]))  # 재현셩 확보용 동점 처리 (책 61쪽 참고)
         new_id = 256 + step
         merge_rules[best_pair] = new_id
 
         # best_pair가 포함된 ID열을 캐시에서 가져옴
         affected_ids = pair_to_ids[best_pair]
-        del pair_to_ids[best_pair]  # もう使わないので削除
+        del pair_to_ids[best_pair]  # 더 이상 사용하지 않으므로 삭제
 
         # 影響のあるID列だけを更新
         for ids in affected_ids:

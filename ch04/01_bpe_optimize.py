@@ -59,7 +59,7 @@ def train_bpe(input_text, vocab_size, end_token="<|endoftext|>"):
 
         # 가장 흔한 ID 쌍 선택
         # best_pair = max(pair_counts, key=pair_counts.get)
-        best_pair = max(pair_counts, key=lambda pair: (pair_counts[pair], pair[0], pair[1]))
+        best_pair = max(pair_counts, key=lambda pair: (pair_counts[pair], pair[0], pair[1]))  # 재현셩 확보용 동점 처리 (책 61쪽 참고)
 
         new_id = 256 + step
         merge_rules[best_pair] = new_id
