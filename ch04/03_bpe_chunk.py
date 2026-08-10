@@ -131,7 +131,7 @@ def train_bpe(file_path, vocab_size, end_token="<|endoftext|>"):
         affected_ids = pair_to_ids[best_pair]
         del pair_to_ids[best_pair]  # 더 이상 사용하지 않으므로 삭제
 
-        # 影響のあるID列だけを更新
+        # 영향 받는 ID열만 갱신
         for ids in affected_ids:
             ids_count = ids_counts[tuple(ids)]
             new_ids = merge(ids, best_pair, new_id)
