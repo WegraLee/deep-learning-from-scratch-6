@@ -107,7 +107,7 @@ model = GPT(
 optimizer = torch.optim.AdamW(model.parameters(), lr=learning_rate)
 
 total_params = sum(p.numel() for p in model.parameters())
-print(f"パラメータ数: {total_params:,} ({total_params/1e6:.1f}M)")
+print(f"파라미터 수: {total_params:,} ({total_params/1e6:.1f}M)")
 
 pbar = tqdm(range(max_iters))
 
@@ -138,7 +138,7 @@ for i in pbar:
     if i in save_iters:
         save_path = f'storybot/model_iter_{i}.pt'
         model.save(save_path)
-        print(f"\nモデルを保存しました（イテレーション {i}）: {save_path}")
+        print(f"\n모델을 저장했습니다(이터레이션 {i}): {save_path}")
 
     # 주기적으로 평가
     if (i % eval_iters) == 0 or i == max_iters - 1:

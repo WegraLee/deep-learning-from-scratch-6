@@ -17,5 +17,5 @@ ids = tokenizer.encode(text, show_progress=True)
 ids_array = np.array(ids, dtype=np.uint16)
 ids_array.tofile("codebot/tiny_codes.bin")
 
-print(f"トークンID数: {len(ids_array)}")
-print(f"最初の20個のトークンID: {ids_array[:20]}")
+print(f"토큰 ID 수: {len(ids_array)}")
+print(f"처음 20개의 토큰 ID: {ids_array[:20]}")

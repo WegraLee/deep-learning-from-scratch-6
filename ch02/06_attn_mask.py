@@ -35,5 +35,5 @@ attention = Attention(embed_dim=256, key_dim=64)
 x = torch.randn(2, 5, 256)  # (batch_size=2, context_len=5, embed_dim=256)
 y = attention(x)
 
-print("入力形状:", x.shape)
-print("出力形状:", y.shape)
+print("입력 형상:", x.shape)
+print("출력 형상:", y.shape)
