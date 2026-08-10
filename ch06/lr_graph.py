@@ -55,8 +55,8 @@ ax.plot(t, d2z_lr, color='orange', linestyle='--', linewidth=2, label='D2Z')
 # 축 설정
 ax.set_xlim(0, 1)
 ax.set_ylim(0, 1.05)
-ax.set_xlabel('学習の進行度', fontsize=12)
-ax.set_ylabel('学習率', fontsize=12)
+ax.set_xlabel('학습 진행 상황', fontsize=12)
+ax.set_ylabel('학습률', fontsize=12)
 
 # 그리드
 ax.grid(True, linestyle='--', alpha=0.7)
