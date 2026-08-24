@@ -1,10 +1,15 @@
 『밑바닥부터 시작하는 딥러닝 ❻』 <br>: 토크나이저부터 추론 모델까지 직접 만드는 LLM
 =============================
 
-<!-- [<img src="https://raw.githubusercontent.com/oreilly-japan/deep-learning-from-scratch-5/images/cover.png" width="200px">](https://www.amazon.co.jp/dp/4814400594/) -->
+<a href="https://product.kyobobook.co.kr/detail/S000220996795"><img src="https://github.com/WegraLee/deep-learning-from-scratch-6/blob/main/cover_3d.png?raw=true" width="180" align=right></a>
 
 
-Coming soon
+**처음부터 끝까지 구현하며 배우는 LLM의 원리**
+
+챗GPT 같은 대규모 언어 모델(LLM)이 일상에 깊이 들어온 지금, 그 작동 원리를 직접 구현해 본 사람은 많지 않습니다. 『밑바닥부터 시작하는 딥러닝』 여섯 번째 편은 토크나이저, 모델, 학습이라는 LLM의 핵심 세 단계를 완성된 라이브러리에 기대지 않고 밑바닥부터 구현합니다. CodeBot, StoryBot, WebBot 세 프로젝트를 거치며 BPE 토크나이저, 트랜스포머 어텐션, 사전 학습부터 SFT·GRPO·DPO 강화 학습까지 LLM 개발의 전 과정을 코드로 직접 재현합니다. 파이썬, 파이토치 기초와 딥러닝에 대한 기본 이해가 있다면, 이 책과 함께 나만의 LLM을 밑바닥부터 키워보세요.
+
+
+[알려진 오류(정오표)](https://docs.google.com/document/d/1OmaYaKZPlcHpygzp61qmJUTe5tKRceMaMJRxx9H-k9s)
 
 
 ## 파일 구성
